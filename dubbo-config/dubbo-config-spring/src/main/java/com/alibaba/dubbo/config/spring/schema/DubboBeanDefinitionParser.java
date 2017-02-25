@@ -73,16 +73,21 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         this.required = required;
     }
 
+    //BeanDefinitionParser中的接口
     public BeanDefinition parse(Element element, ParserContext parserContext) {
+        //实际的解析过程
         return parse(element, parserContext, beanClass, required);
     }
     
     @SuppressWarnings("unchecked")
     private static BeanDefinition parse(Element element, ParserContext parserContext, Class<?> beanClass, boolean required) {
+        // TODO RootBeanDefinition分析
         RootBeanDefinition beanDefinition = new RootBeanDefinition();
         beanDefinition.setBeanClass(beanClass);
         beanDefinition.setLazyInit(false);
+        //得到标签的id属性
         String id = element.getAttribute("id");
+        //标签没有id，并且required为true的时候，生成一个id。required为true表示必须要有id这个属性
         if ((id == null || id.length() == 0) && required) {
         	String generatedBeanName = element.getAttribute("name");
         	if (generatedBeanName == null || generatedBeanName.length() == 0) {
