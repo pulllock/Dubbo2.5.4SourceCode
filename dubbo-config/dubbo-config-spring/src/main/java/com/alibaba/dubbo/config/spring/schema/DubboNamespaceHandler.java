@@ -52,6 +52,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
         //DubboBeanDefinitionParser实现了BeanDefinitionParser接口，实现parse方法对标签进行解析。
         //将解析之后的标签变成Spring中的一个Bean对象。
         //application对应一个ApplicationConfig。
+        //在执行完init方法之后，spring会得到所有的下面这个10个handler
 	    registerBeanDefinitionParser("application", new DubboBeanDefinitionParser(ApplicationConfig.class, true));
         registerBeanDefinitionParser("module", new DubboBeanDefinitionParser(ModuleConfig.class, true));
         registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));
