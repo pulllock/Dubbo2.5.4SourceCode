@@ -78,7 +78,17 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         //实际的解析过程
         return parse(element, parserContext, beanClass, required);
     }
-    
+
+
+    /**
+     * 解析完xml中所有的标签，返回BeanDefinition
+     * 然后Spring在finishRefresh();方法中开始调用dubbo的发布服务的方法，在ServiceBean的onApplicationEvent方法中export
+     * export方法的实现在ServiceConfig中
+     * 下面是Spring中的注释
+     * //Last step: publish corresponding event.
+     * finishRefresh();
+     *
+     */
     @SuppressWarnings("unchecked")
     private static BeanDefinition parse(Element element, ParserContext parserContext, Class<?> beanClass, boolean required) {
         // TODO RootBeanDefinition分析
@@ -89,19 +99,27 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         String id = element.getAttribute("id");
         //标签没有id，并且required为true的时候，生成一个id。required为true表示必须要有id这个属性
         if ((id == null || id.length() == 0) && required) {
+            //name属性
         	String generatedBeanName = element.getAttribute("name");
+        	//没name属性
         	if (generatedBeanName == null || generatedBeanName.length() == 0) {
+        	    //name属性为空，如果是protocol标签，默认使用dubbo
+                //<dubbo:protocol/>服务提供者协议配置
         	    if (ProtocolConfig.class.equals(beanClass)) {
         	        generatedBeanName = "dubbo";
         	    } else {
+        	        //获取interface属性作为名字
         	        generatedBeanName = element.getAttribute("interface");
         	    }
         	}
+        	//如果经过上面的步骤还没有名字，就使用类名字，
         	if (generatedBeanName == null || generatedBeanName.length() == 0) {
         		generatedBeanName = beanClass.getName();
         	}
+        	//经过上面的解析就会得到标签的id属性
             id = generatedBeanName; 
             int counter = 2;
+            //有同名的id的时候，在名字后面添加数字，保证id是唯一的
             while(parserContext.getRegistry().containsBeanDefinition(id)) {
                 id = generatedBeanName + (counter ++);
             }
@@ -110,9 +128,11 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             if (parserContext.getRegistry().containsBeanDefinition(id))  {
         		throw new IllegalStateException("Duplicate spring bean id " + id);
         	}
+        	//注册新的bean
             parserContext.getRegistry().registerBeanDefinition(id, beanDefinition);
             beanDefinition.getPropertyValues().addPropertyValue("id", id);
         }
+        //如果是protocol标签
         if (ProtocolConfig.class.equals(beanClass)) {
             for (String name : parserContext.getRegistry().getBeanDefinitionNames()) {
                 BeanDefinition definition = parserContext.getRegistry().getBeanDefinition(name);
@@ -138,53 +158,77 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         } else if (ConsumerConfig.class.equals(beanClass)) {
             parseNested(element, parserContext, ReferenceBean.class, false, "reference", "consumer", id, beanDefinition);
         }
+        //标签的属性集
         Set<String> props = new HashSet<String>();
         ManagedMap parameters = null;
         for (Method setter : beanClass.getMethods()) {
             String name = setter.getName();
+            //获取各种Config的set方法，比如ApplicationConfig
+            //方法修饰符是public
+            //setter的参数只有一个
             if (name.length() > 3 && name.startsWith("set")
                     && Modifier.isPublic(setter.getModifiers())
                     && setter.getParameterTypes().length == 1) {
+                //setter方法的参数类型
                 Class<?> type = setter.getParameterTypes()[0];
+                /**
+                 * name.substring(3, 4).toLowerCase() + name.substring(4)
+                 * 比如name为setVersion，经过上面之后得到需要的v+ersion，即小写的version。
+                 * camelToSplitName驼峰命名的转换成中横线“-”
+                 */
                 String property = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
+                //得到的标签属性添加到属性set中
                 props.add(property);
                 Method getter = null;
                 try {
+                    //得到get方法
                     getter = beanClass.getMethod("get" + name.substring(3), new Class<?>[0]);
                 } catch (NoSuchMethodException e) {
                     try {
+                        //获取is方法
                         getter = beanClass.getMethod("is" + name.substring(3), new Class<?>[0]);
                     } catch (NoSuchMethodException e2) {
                     }
                 }
+                //属性没有get方法或者属性的get方法不是public，或者返回类型不为上面得到的参数类型。
                 if (getter == null 
                         || ! Modifier.isPublic(getter.getModifiers())
                         || ! type.equals(getter.getReturnType())) {
                     continue;
                 }
+                //解析parameters属性
                 if ("parameters".equals(property)) {
                     parameters = parseParameters(element.getChildNodes(), beanDefinition);
                 } else if ("methods".equals(property)) {
+                    //解析methods属性
                     parseMethods(id, element.getChildNodes(), beanDefinition, parserContext);
                 } else if ("arguments".equals(property)) {
+                    //解析arguments属性
                     parseArguments(id, element.getChildNodes(), beanDefinition, parserContext);
                 } else {
+                    //获取到属性的值
                     String value = element.getAttribute(property);
                     if (value != null) {
                     	value = value.trim();
                     	if (value.length() > 0) {
+                    	    //registry属性，注册中心配置
+                            //注册中心配置为N/A
                     		if ("registry".equals(property) && RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(value)) {
                             	RegistryConfig registryConfig = new RegistryConfig();
                             	registryConfig.setAddress(RegistryConfig.NO_AVAILABLE);
                             	beanDefinition.getPropertyValues().addPropertyValue(property, registryConfig);
                             } else if ("registry".equals(property) && value.indexOf(',') != -1) {
+                    		    //registry属性，配置了多个注册中心
                     			parseMultiRef("registries", value, beanDefinition, parserContext);
                             } else if ("provider".equals(property) && value.indexOf(',') != -1) {
+                    		    //provider属性，配置了多个
                             	parseMultiRef("providers", value, beanDefinition, parserContext);
                             } else if ("protocol".equals(property) && value.indexOf(',') != -1) {
+                    		    //protocol属性，配置了多个
                                 parseMultiRef("protocols", value, beanDefinition, parserContext);
                             } else {
                                 Object reference;
+                                //参数类型为基本数据类型
                                 if (isPrimitive(type)) {
                                     if ("async".equals(property) && "false".equals(value)
                                             || "timeout".equals(property) && "0".equals(value)
@@ -240,22 +284,29 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 }
             }
         }
+        //标签中配置的所有的属性
         NamedNodeMap attributes = element.getAttributes();
         int len = attributes.getLength();
         for (int i = 0; i < len; i++) {
+            //标签中的属性
             Node node = attributes.item(i);
+            //标签中的属性的名字
             String name = node.getLocalName();
+            //经过前面解析之后，标签属性set中不包含当前解析的标签属性
             if (! props.contains(name)) {
                 if (parameters == null) {
                     parameters = new ManagedMap();
                 }
+                //属性值
                 String value = node.getNodeValue();
+                //添加到属性map中
                 parameters.put(name, new TypedStringValue(value, String.class));
             }
         }
         if (parameters != null) {
             beanDefinition.getPropertyValues().addPropertyValue("parameters", parameters);
         }
+        //返回一个BeanDefinition给Spring
         return beanDefinition;
     }
 
