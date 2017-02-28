@@ -43,7 +43,13 @@ import com.alibaba.dubbo.config.spring.extension.SpringExtensionFactory;
 
 /**
  * ServiceFactoryBean
- * 
+ * 继承ServiceConfig类，对应service标签
+ * 实现了ApplicationListener，表明这是一个监听器，Spring Bean初始化完成后，会由Spring调用监听器的onApplicationEvent方法，dubbo就在此方法中发布服务
+ * 实现了ApplicationContextAware接口，可以获取ApplicationContext
+ * 实现了BeanNameAware接口，可以获得到bean自身的id
+ * 实现了InitializingBean接口，可以让bean在初始化完成之后做一些自定义的操作，容器在为bean设置了属性之后，会调用afterPropertiesSet方法
+ * 实现了DisposableBean接口，容器在销毁该 Bean 之前，将调用该接口的 destroy() 方法
+ * 上面实现这几个接口之后，代码和Spring框架耦合度增加，不推荐使用
  * @author william.liangf
  * @export
  */
