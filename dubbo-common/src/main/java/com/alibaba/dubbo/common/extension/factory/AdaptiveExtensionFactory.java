@@ -25,7 +25,9 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
 
 /**
  * AdaptiveExtensionFactory
- * 
+ *  ExtensionFactory的实现，有@Adaptive注解，是自适应扩展实现
+ *  每个扩展点做多只能有一个自适应实现，如果所有的实现中都没注释@Adaptive注解，那么dubbo会动态生成一个自适应的实现类
+ *  对所有的ExtensionFactory调用的地方实际上是对AdaptiveExtensionFactory的调用
  * @author william.liangf
  */
 @Adaptive
@@ -37,12 +39,15 @@ public class AdaptiveExtensionFactory implements ExtensionFactory {
         ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
         List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
         for (String name : loader.getSupportedExtensions()) {
+            //保存所有ExtensionFactory的实现
             list.add(loader.getExtension(name));
         }
         factories = Collections.unmodifiableList(list);
     }
 
     public <T> T getExtension(Class<T> type, String name) {
+        //依次遍历各个ExtensionFactory实现的getExtension方法
+        //找到Extension后立即返回，没找到返回null
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);
             if (extension != null) {

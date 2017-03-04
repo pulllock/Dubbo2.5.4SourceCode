@@ -16,8 +16,10 @@
 package com.alibaba.dubbo.common.extension;
 
 /**
- * ExtensionFactory
- * 
+ * ExtensionFactory，扩展点对象生成工厂接口
+ * 有@SPI注解，是一个扩展点
+ * 主要有三个实现AdaptiveExtensionFactory，SpiExtensionFactory，SpringExtensionFactory
+ * 不同的实现可以已不同的方式来完成对扩展点实现的加载
  * @author william.liangf
  * @export
  */

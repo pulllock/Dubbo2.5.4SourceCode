@@ -56,9 +56,9 @@ import com.alibaba.dubbo.config.spring.extension.SpringExtensionFactory;
 public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean, ApplicationContextAware, ApplicationListener, BeanNameAware {
 
 	private static final long serialVersionUID = 213195494150089726L;
-
+    //Spring的应用上下文
     private static transient ApplicationContext SPRING_CONTEXT;
-    
+    //Spring的应用上下文
 	private transient ApplicationContext applicationContext;
 
     private transient String beanName;
@@ -73,10 +73,18 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         super(service);
     }
 
+    /**
+     * 获取应用上下文的方法
+     * @return
+     */
     public static ApplicationContext getSpringContext() {
 	    return SPRING_CONTEXT;
 	}
 
+    /**
+     * 实现了ApplicationContextAware接口，Spring初始化时候，会通过该方法将ApplicationContext对象注入
+     * @param applicationContext
+     */
 	public void setApplicationContext(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 		SpringExtensionFactory.addApplicationContext(applicationContext);
