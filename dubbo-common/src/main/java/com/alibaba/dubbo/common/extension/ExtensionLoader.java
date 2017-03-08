@@ -76,21 +76,22 @@ public class ExtensionLoader<T> {
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
-    //扩展的类型
+    //扩展点的类型，也就是注解了@SPI的扩展点接口
     private final Class<?> type;
-
+    //扩展点ExtesionFactory的adaptive对象。
+    //dubbo的这个框架是自包含的，例如这个框架自身实现的代码ExtesionFactory也使用了扩展点的能力。
     private final ExtensionFactory objectFactory;
-
+    //
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
-    
+    //
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String,Class<?>>>();
 
     private final Map<String, Activate> cachedActivates = new ConcurrentHashMap<String, Activate>();
-
+    //注解了@Adaptive的类
     private volatile Class<?> cachedAdaptiveClass = null;
 
     private final ConcurrentMap<String, Holder<Object>> cachedInstances = new ConcurrentHashMap<String, Holder<Object>>();
-
+    //没有指定扩展点名字时，默认使用的名字
     private String cachedDefaultName;
 
     private final Holder<Object> cachedAdaptiveInstance = new Holder<Object>();

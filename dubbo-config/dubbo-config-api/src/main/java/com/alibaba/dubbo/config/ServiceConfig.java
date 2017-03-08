@@ -279,23 +279,31 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void doExportUrls() {
+        //加载注册中心
+        //组装成registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?
+        // application=dubbo-provider&application.version=1.0&dubbo=2.5.3&environment=product&organization=china&
+        // owner=cheng.xi&pid=11806&registry=zookeeper&timestamp=1488808916423
         List<URL> registryURLs = loadRegistries(true);
+        //遍历所有的协议，分别导出
         for (ProtocolConfig protocolConfig : protocols) {
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
+        //协议名
         String name = protocolConfig.getName();
+        //没配置，默认为dubbo
         if (name == null || name.length() == 0) {
             name = "dubbo";
         }
-
+        //注册中心地址
         String host = protocolConfig.getHost();
         if (provider != null && (host == null || host.length() == 0)) {
             host = provider.getHost();
         }
         boolean anyhost = false;
+        //如果是本机ip
         if (NetUtils.isInvalidLocalHost(host)) {
             anyhost = true;
             try {
@@ -328,11 +336,17 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 }
             }
         }
-
+        //非本机ip
+        //注册中心端口
         Integer port = protocolConfig.getPort();
         if (provider != null && (port == null || port == 0)) {
             port = provider.getPort();
         }
+        //根据协议名获取对应默认的端口号
+        //使用dubbo的spi扩展机制来获取
+        //getExtensionLoader(Protocol.class)获取Protocol的实现类
+        //getExtension(name)获取指定协议名的实现
+        //getDefaultPort()获取指定实现的默认端口
         final int defaultPort = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).getDefaultPort();
         if (port == null || port == 0) {
             port = defaultPort;

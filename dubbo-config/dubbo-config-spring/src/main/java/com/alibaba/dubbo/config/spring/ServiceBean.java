@@ -50,6 +50,9 @@ import com.alibaba.dubbo.config.spring.extension.SpringExtensionFactory;
  * 实现了InitializingBean接口，可以让bean在初始化完成之后做一些自定义的操作，容器在为bean设置了属性之后，会调用afterPropertiesSet方法
  * 实现了DisposableBean接口，容器在销毁该 Bean 之前，将调用该接口的 destroy() 方法
  * 上面实现这几个接口之后，代码和Spring框架耦合度增加，不推荐使用
+ *
+ * 对于配置了delay属性的Bean在afterPropertiesSet方法被调用的时候就会开始暴露服务。
+ * 没有配置delay属性的Bean会在bean实例化结束以后在onApplicationEvent方法中暴露服务。
  * @author william.liangf
  * @export
  */
@@ -87,6 +90,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
      */
 	public void setApplicationContext(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
+		//给Spring扩展点工厂类设置应用上下文
 		SpringExtensionFactory.addApplicationContext(applicationContext);
 		if (applicationContext != null) {
 		    SPRING_CONTEXT = applicationContext;
@@ -114,12 +118,16 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         this.beanName = name;
     }
 
+    //实现了ApplicationListener接口，Spring在Bean初始化以后（finishRefresh()）会调用该方法
+    //dubbo在此方法中发布服务
     public void onApplicationEvent(ApplicationEvent event) {
+	    //只监听容器刷新事件ContextRefreshedEvent
         if (ContextRefreshedEvent.class.getName().equals(event.getClass().getName())) {
         	if (isDelay() && ! isExported() && ! isUnexported()) {
                 if (logger.isInfoEnabled()) {
                     logger.info("The service ready on spring started. service: " + getInterface());
                 }
+                //父类ServiceConfig中实现的方法
                 export();
             }
         }
@@ -134,6 +142,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return supportedApplicationListener && (delay == null || delay.intValue() == -1);
     }
 
+    //实现了InitializingBean接口，Spring会在Bean实例化过程中的设置完属性之后调用该方法
     @SuppressWarnings({ "unchecked", "deprecation" })
 	public void afterPropertiesSet() throws Exception {
         if (getProvider() == null) {

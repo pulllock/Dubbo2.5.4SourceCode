@@ -145,13 +145,17 @@ public class ConfigUtils {
         if (PROPERTIES == null) {
             synchronized (ConfigUtils.class) {
                 if (PROPERTIES == null) {
+                    //从java系统变量中获取dubbo.properties.file
                     String path = System.getProperty(Constants.DUBBO_PROPERTIES_KEY);
                     if (path == null || path.length() == 0) {
+                        //从系统的环境变量中获取dubbo.properties.file
                         path = System.getenv(Constants.DUBBO_PROPERTIES_KEY);
                         if (path == null || path.length() == 0) {
+                            //默认的dubbo.peoperties
                             path = Constants.DEFAULT_DUBBO_PROPERTIES;
                         }
                     }
+                    //加载配置文件
                     PROPERTIES = ConfigUtils.loadProperties(path, false, true);
                 }
             }
@@ -177,10 +181,12 @@ public class ConfigUtils {
 	
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static String getProperty(String key, String defaultValue) {
+        //从当前虚拟机中获取设定的系统属性
         String value = System.getProperty(key);
         if (value != null && value.length() > 0) {
             return value;
         }
+        //java系统变量没有设置睡醒，就从配置文件中获取
         Properties properties = getProperties();
         return replaceProperty(properties.getProperty(key, defaultValue), (Map)properties);
     }
@@ -195,9 +201,9 @@ public class ConfigUtils {
     
 	/**
 	 * Load properties file to {@link Properties} from class path.
-	 * 
+	 * 从classpath加载配置文件
 	 * @param fileName properties file name. for example: <code>dubbo.properties</code>, <code>METE-INF/conf/foo.properties</code>
-	 * @param allowMultiFile if <code>false</code>, throw {@link IllegalStateException} when found multi file on the class path.
+	 * @param allowMultiFile 是否允许多个配置文件if <code>false</code>, throw {@link IllegalStateException} when found multi file on the class path.
      * @param optional is optional. if <code>false</code>, log warn when properties config file not found!s
 	 * @return loaded {@link Properties} content. <ul>
 	 * <li>return empty Properties if no file found.
@@ -207,6 +213,7 @@ public class ConfigUtils {
 	 */
     public static Properties loadProperties(String fileName, boolean allowMultiFile, boolean optional) {
         Properties properties = new Properties();
+        //绝对路径加载
         if (fileName.startsWith("/")) {
             try {
                 FileInputStream input = new FileInputStream(fileName);
@@ -220,11 +227,11 @@ public class ConfigUtils {
             }
             return properties;
         }
-        
+        //保存文件路径
         List<java.net.URL> list = new ArrayList<java.net.URL>();
         try {
             Enumeration<java.net.URL> urls = ClassHelper.getClassLoader().getResources(fileName);
-            list = new ArrayList<java.net.URL>();
+            list = new ArrayList<java.net.URL>();//不明白为啥还要再new一次
             while (urls.hasMoreElements()) {
                 list.add(urls.nextElement());
             }
@@ -238,7 +245,7 @@ public class ConfigUtils {
             }
             return properties;
         }
-        
+        //不允许多个文件
         if(! allowMultiFile) {
             if (list.size() > 1) {
                 String errMsg = String.format("only 1 %s file is expected, but %d dubbo.properties files found on class path: %s",
@@ -257,7 +264,8 @@ public class ConfigUtils {
         }
         
         logger.info("load " + fileName + " properties file from " + list);
-        
+        //以下允许加载多个配置文件
+        //遍历每个配置文件
         for(java.net.URL url : list) {
             try {
                 Properties p = new Properties();
