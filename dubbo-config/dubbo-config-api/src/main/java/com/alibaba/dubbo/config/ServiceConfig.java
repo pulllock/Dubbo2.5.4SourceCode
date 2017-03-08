@@ -50,7 +50,7 @@ import com.alibaba.dubbo.rpc.support.ProtocolUtils;
 
 /**
  * ServiceConfig
- * 
+ * 对外配置的接口，主要是调用此方法中的export方法进行服务的发布，编程实现或者Spring调用都可以
  * @author william.liangf
  * @export
  */
@@ -115,7 +115,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 		return unexported;
 	}
 
+    /**
+     * 同步方法，一次只发布一个服务
+     */
     public synchronized void export() {
+        //ProviderCoonfig对应<dubbo:provider>，服务提供者的默认值，如果service和protocol标签没设置相关属性，就会使用这个里面的默认值
+        //如果配置了provider，尝试从其中获取export和delay属性
         if (provider != null) {
             if (export == null) {
                 export = provider.getExport();
@@ -124,9 +129,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 delay = provider.getDelay();
             }
         }
+        //不允许暴露，就直接返回
         if (export != null && ! export.booleanValue()) {
             return;
         }
+        //设置了delay的值，启动新线程，sleepdelay的时间，再去doExport
         if (delay != null && delay > 0) {
             Thread thread = new Thread(new Runnable() {
                 public void run() {
@@ -140,7 +147,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             thread.setDaemon(true);
             thread.setName("DelayExportServiceThread");
             thread.start();
-        } else {
+        } else {//没有设置delay时间，直接doExport
             doExport();
         }
     }
@@ -149,13 +156,16 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
         }
+        //已经导出，直接返回
         if (exported) {
             return;
         }
+        //设置导出为true
         exported = true;
         if (interfaceName == null || interfaceName.length() == 0) {
             throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
         }
+        //会检查各种属性，从各处获取配置，来填充属性。
         checkDefault();
         if (provider != null) {
             if (application == null) {
@@ -193,25 +203,32 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (ref instanceof GenericService) {
             interfaceClass = GenericService.class;
             if (StringUtils.isEmpty(generic)) {
+                //通用服务接口，设为true
                 generic = Boolean.TRUE.toString();
             }
         } else {
             try {
+                //装载类
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
                         .getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            //检查接口和对应的方法（子标签）
             checkInterfaceAndMethods(interfaceClass, methods);
+            //检查ref属性
             checkRef();
+            //非通用服务接口，设为false
             generic = Boolean.FALSE.toString();
         }
+        //local服务接口的本地实现类名
         if(local !=null){
             if("true".equals(local)){
                 local=interfaceName+"Local";
             }
             Class<?> localClass;
             try {
+                //加载类
                 localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
@@ -220,6 +237,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 throw new IllegalStateException("The local implemention class " + localClass.getName() + " not implement interface " + interfaceName);
             }
         }
+        //服务接口的本地实现类名
         if(stub !=null){
             if("true".equals(stub)){
                 stub=interfaceName+"Stub";
@@ -234,14 +252,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 throw new IllegalStateException("The stub implemention class " + stubClass.getName() + " not implement interface " + interfaceName);
             }
         }
+        //检查application信息
         checkApplication();
+        //检查注册中心配置
         checkRegistry();
+        //检查协议信息
         checkProtocol();
+        //填充各种属性
         appendProperties(this);
         checkStubAndMock(interfaceClass);
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }
+        //导出url
         doExportUrls();
     }
 
@@ -529,9 +552,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     private void checkDefault() {
+        //provider没配置就为空，直接new一个，名字为<dubbo:provider/>，父类AbstractConfig重写了toString方法
         if (provider == null) {
             provider = new ProviderConfig();
         }
+        //这个方法会从JVM虚拟机环境变量，系统环境变量，properties文件中获取各种配置，来填充属性
         appendProperties(provider);
     }
 
