@@ -104,8 +104,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected void checkRegistry() {
         // 兼容旧版本
         if (registries == null || registries.size() == 0) {
+            //获取注册中心地址
             String address = ConfigUtils.getProperty("dubbo.registry.address");
             if (address != null && address.length() > 0) {
+                //保存注册中心的list
                 registries = new ArrayList<RegistryConfig>();
                 String[] as = address.split("\\s*[|]+\\s*");
                 for (String a : as) {
@@ -124,6 +126,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                                                     + Version.getVersion()
                                                     + ", Please add <dubbo:registry address=\"...\" /> to your spring config. If you want unregister, please set <dubbo:service registry=\"N/A\" />");
         }
+        //添加属性
         for (RegistryConfig registryConfig : registries) {
             appendProperties(registryConfig);
         }
@@ -154,16 +157,23 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
     }
-    
+
+    //加载注册中心地址
+    //如果xml没有配置，就从dubbo.properties中获取，
     protected List<URL> loadRegistries(boolean provider) {
+        //检查注册中心配置
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
         if (registries != null && registries.size() > 0) {
+            //遍历注册中心配置
             for (RegistryConfig config : registries) {
+                //获取配置中的注册中心地址
                 String address = config.getAddress();
                 if (address == null || address.length() == 0) {
+                    //没配置，使用默认的0.0.0.0
                 	address = Constants.ANYHOST_VALUE;
                 }
+                //尝试从系统属性中获取
                 String sysaddress = System.getProperty("dubbo.registry.address");
                 if (sysaddress != null && sysaddress.length() > 0) {
                     address = sysaddress;

@@ -138,42 +138,53 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
+        //RegistryConfig得到的prefix就是dubbo.registry
         String prefix = "dubbo." + getTagName(config.getClass()) + ".";
+        //获取所有public方法
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
                 String name = method.getName();
+                //set方法，public，只有一个参数，参数为包装类型
                 if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers()) 
                         && method.getParameterTypes().length == 1 && isPrimitive(method.getParameterTypes()[0])) {
+                    //获取到setter方法对应的变量，setVersion-->version
                     String property = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
 
                     String value = null;
+                    //标签的id属性
                     if (config.getId() != null && config.getId().length() > 0) {
+                        //比如dubbo.registry.com.alibaba.dubbo.config.RegistryConfig.version
                         String pn = prefix + config.getId() + "." + property;
+                        //java系统变量中查找属性
                         value = System.getProperty(pn);
                         if(! StringUtils.isBlank(value)) {
                             logger.info("Use System Property " + pn + " to config dubbo");
                         }
                     }
                     if (value == null || value.length() == 0) {
+                        //使用类似dubbo.registry.version来从系统变量获取
                         String pn = prefix + property;
                         value = System.getProperty(pn);
                         if(! StringUtils.isBlank(value)) {
                             logger.info("Use System Property " + pn + " to config dubbo");
                         }
                     }
-                    if (value == null || value.length() == 0) {
+                    if (value == null || value.length() == 0) {//系统变量中不存在
+                        //获取对应的getter方法，比如getVersion
                         Method getter;
                         try {
                             getter = config.getClass().getMethod("get" + name.substring(3), new Class<?>[0]);
                         } catch (NoSuchMethodException e) {
                             try {
+                                //没有getter方法，尝试is，比如isVersion
                                 getter = config.getClass().getMethod("is" + name.substring(3), new Class<?>[0]);
                             } catch (NoSuchMethodException e2) {
                                 getter = null;
                             }
                         }
-                        if (getter != null) {
+                        if (getter != null) {//存在getXxx或者isXxx方法
+                            //调用getXxx或者isXx方法之后再次获取
                             if (getter.invoke(config, new Object[0]) == null) {
                                 if (config.getId() != null && config.getId().length() > 0) {
                                     value = ConfigUtils.getProperty(prefix + config.getId() + "." + property);
@@ -182,6 +193,7 @@ public abstract class AbstractConfig implements Serializable {
                                     value = ConfigUtils.getProperty(prefix + property);
                                 }
                                 if (value == null || value.length() == 0) {
+                                    //使用遗留的属性
                                     String legacyKey = legacyProperties.get(prefix + property);
                                     if (legacyKey != null && legacyKey.length() > 0) {
                                         value = convertLegacyValue(legacyKey, ConfigUtils.getProperty(legacyKey));
@@ -191,6 +203,7 @@ public abstract class AbstractConfig implements Serializable {
                             }
                         }
                     }
+                    //如果能获取到属性，就设置为当前值
                     if (value != null && value.length() > 0) {
                         method.invoke(config, new Object[] {convertPrimitive(method.getParameterTypes()[0], value)});
                     }
@@ -202,7 +215,10 @@ public abstract class AbstractConfig implements Serializable {
     }
     
     private static String getTagName(Class<?> cls) {
+        //获取类名，比如class com.alibaba.dubbo.config.RegistryConfig，获取到RegistryConfig
+        //最后返回的tag就是registry
         String tag = cls.getSimpleName();
+        //只处理config和bean结尾的类
         for (String suffix : SUFFIXS) {
             if (tag.endsWith(suffix)) {
                 tag = tag.substring(0, tag.length() - suffix.length());
