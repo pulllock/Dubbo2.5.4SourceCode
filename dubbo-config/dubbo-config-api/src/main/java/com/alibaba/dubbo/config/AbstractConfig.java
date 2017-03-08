@@ -203,7 +203,7 @@ public abstract class AbstractConfig implements Serializable {
                             }
                         }
                     }
-                    //如果能获取到属性，就设置为当前值
+                    //如果能获取到属性，就设置为当前获取到的值
                     if (value != null && value.length() > 0) {
                         method.invoke(config, new Object[] {convertPrimitive(method.getParameterTypes()[0], value)});
                     }
