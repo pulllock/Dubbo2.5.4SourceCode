@@ -238,27 +238,36 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
+        //获取所有的方法
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
+                //方法名
                 String name = method.getName();
+                //get或者is方法
                 if ((name.startsWith("get") || name.startsWith("is")) 
-                        && ! "getClass".equals(name)
-                        && Modifier.isPublic(method.getModifiers()) 
-                        && method.getParameterTypes().length == 0
-                        && isPrimitive(method.getReturnType())) {
+                        && ! "getClass".equals(name)//不能是getClass
+                        && Modifier.isPublic(method.getModifiers()) //public方法
+                        && method.getParameterTypes().length == 0//无参数
+                        && isPrimitive(method.getReturnType())) {//返回类型是包装类型
+                    //方法上的Parameter注解
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    //返回类型为Object或者注解Parameter配置是exclude的不解析
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
+                    //i=3 是get i=2是is
                     int i = name.startsWith("get") ? 3 : 2;
+                    //获取get或者is后面的属性名字
                     String prop = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
                     String key;
+                    //有Parameter注解，且key属性不为空，将此key赋值
                     if (parameter != null && parameter.key() != null && parameter.key().length() > 0) {
                         key = parameter.key();
-                    } else {
+                    } else {//使用属性名作为key
                         key = prop;
                     }
+                    //取得属性的值
                     Object value = method.invoke(config, new Object[0]);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
