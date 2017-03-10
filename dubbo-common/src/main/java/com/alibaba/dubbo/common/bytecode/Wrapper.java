@@ -71,7 +71,7 @@ public abstract class Wrapper
 
 	/**
 	 * get wrapper.
-	 * 
+	 * 获取Wrapper类
 	 * @param c Class instance.
 	 * @return Wrapper instance(not null).
 	 */
@@ -79,13 +79,14 @@ public abstract class Wrapper
     {
         while( ClassGenerator.isDynamicClass(c) ) // can not wrapper on dynamic class.
             c = c.getSuperclass();
-
+		//Object类型的
         if( c == Object.class )
             return OBJECT_WRAPPER;
-
+		//先从Wrapper缓存中查找
         Wrapper ret = WRAPPER_MAP.get(c);
         if( ret == null )
         {
+        	//生成Wrapper
             ret = makeWrapper(c);
             WRAPPER_MAP.put(c,ret);
         }
@@ -192,7 +193,7 @@ public abstract class Wrapper
 
 	/**
 	 * invoke method.
-	 * 
+	 *
 	 * @param instance instance.
 	 * @param mn method name.
 	 * @param types 
@@ -201,6 +202,11 @@ public abstract class Wrapper
 	 */
 	abstract public Object invokeMethod(Object instance, String mn, Class<?>[] types, Object[] args) throws NoSuchMethodException, InvocationTargetException;
 
+	/**
+	 * 创建一个继承自Wrapper的动态类的新实例
+	 * @param c
+	 * @return
+	 */
 	private static Wrapper makeWrapper(Class<?> c)
 	{
 		if( c.isPrimitive() )
