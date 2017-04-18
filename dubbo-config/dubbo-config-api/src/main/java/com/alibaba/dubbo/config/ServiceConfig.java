@@ -320,20 +320,22 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (name == null || name.length() == 0) {
             name = "dubbo";
         }
-        //注册中心地址
+        //服务IP地址(多网卡时使用)
         String host = protocolConfig.getHost();
         if (provider != null && (host == null || host.length() == 0)) {
             host = provider.getHost();
         }
         boolean anyhost = false;
-        //如果是本机ip
+        //如果是无效的本机ip
         if (NetUtils.isInvalidLocalHost(host)) {
             anyhost = true;
             try {
+                //获取本机ip
                 host = InetAddress.getLocalHost().getHostAddress();
             } catch (UnknownHostException e) {
                 logger.warn(e.getMessage(), e);
             }
+            //无效的本地ip地址
             if (NetUtils.isInvalidLocalHost(host)) {
                 if (registryURLs != null && registryURLs.size() > 0) {
                     for (URL registryURL : registryURLs) {
@@ -560,6 +562,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
+            //protocol是根据spi自动生成的，里面会根据协议来判断调用哪个具体的实现
+            //这里会使用InjvmProtocol
             //先获取Invoker，然后根据协议将Invoker暴露成Exporter
             Exporter<?> exporter = protocol.export(
                     proxyFactory.getInvoker(ref, (Class) interfaceClass, local));

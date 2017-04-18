@@ -568,8 +568,15 @@ public class ExtensionLoader<T> {
                             //setter方法对应的属性名
                             String property = method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
                             //根据类型和名称信息从ExtensionFactory中获取
+                            //获取实现
+                            //为什么要使用对象工厂来获取setter方法中对应的实现？
+                            //不能通过spi直接获取自适应实现吗？比如ExtensionLoader.getExtension(pt);
+                            //因为setter方法中有可能是一个spi，也有可能是普通的bean
+                            //所以此时不能写死通过spi获取，还需要有其他方式来获取实现进行注入
+                            // dubbo中有两个实现，一个是spi的ExtensionFactory，一个是spring的ExtensionFactory
+                            //如果还有其他的，我们可以自定义ExtensionFactory
                             Object object = objectFactory.getExtension(pt, property);
-                            if (object != null) {//说明set方法的参数是扩展点类型，进行注入
+                            if (object != null) {//获取到了setter方法的参数的实现，可以进行注入
                                 method.invoke(instance, object);
                             }
                         } catch (Exception e) {
@@ -808,7 +815,8 @@ public class ExtensionLoader<T> {
     }
     
     private Class<?> getAdaptiveExtensionClass() {
-        //加载当前Extension的所有实现，如果有@Adaptive类型，会赋值给cachedAdaptiveClass
+        //加载当前Extension的所有实现，如果有@Adaptive类型的实现类，会赋值给cachedAdaptiveClass
+        //目前只有AdaptiveExtensionFactory和AdaptiveCompiler两个实现类是被注解了@Adaptive
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
