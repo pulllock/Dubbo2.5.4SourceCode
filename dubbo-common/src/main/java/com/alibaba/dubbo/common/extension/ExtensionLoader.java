@@ -70,16 +70,16 @@ public class ExtensionLoader<T> {
     private static final String DUBBO_INTERNAL_DIRECTORY = DUBBO_DIRECTORY + "internal/";
 
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
-    //ExtensionLoader实例的缓存
+    // ExtensionLoader实例的缓存
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
     //扩展实现的实例
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
-    //扩展点的类型，也就是注解了@SPI的扩展点接口
+    // 扩展点的类型，也就是注解了@SPI的扩展点接口
     private final Class<?> type;
     //扩展点ExtesionFactory的adaptive对象。
-    //dubbo的这个框架是自包含的，例如这个框架自身实现的代码ExtesionFactory也使用了扩展点的能力。
+    // dubbo的这个框架是自包含的，例如这个框架自身实现的代码ExtesionFactory也使用了扩展点的能力。
     private final ExtensionFactory objectFactory;
     //
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
@@ -111,40 +111,60 @@ public class ExtensionLoader<T> {
      * @param type 某个扩展点的类型
      * @param <T>
      * @return
+     *
+     * 1. 各种校验
+     * 2. 从缓存中获取指定类型的ExtensionLoader实例
+     * 3. 如果缓存中不存在，就新建个ExtensionLoader实例，并放到缓存中
+     * 4. 返回ExtensionLoader实例
      */
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
-        //扩展点类型不能为空
+        // 扩展点类型不能为空
         if (type == null)
             throw new IllegalArgumentException("Extension type == null");
-        //扩展点类型只能是接口类型的
+        // 扩展点类型只能是接口类型的
         if(!type.isInterface()) {
             throw new IllegalArgumentException("Extension type(" + type + ") is not interface!");
         }
-        //没有添加@SPI注解
+        // 没有添加@SPI注解
         if(!withExtensionAnnotation(type)) {
             throw new IllegalArgumentException("Extension type(" + type + 
                     ") is not extension, because WITHOUT @" + SPI.class.getSimpleName() + " Annotation!");
         }
-        //先从缓存中获取指定类型的ExtensionLoader
+        // 先从缓存中获取指定类型的ExtensionLoader
         ExtensionLoader<T> loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
-        //缓存中不存在
+        // 缓存中不存在
         if (loader == null) {
-            //创建一个新的ExtensionLoader实例，放到缓存中去
-            //对于每一个扩展，dubbo中只有个对应的ExtensionLoader实例
+            /**
+             * 创建一个新的ExtensionLoader实例，放到缓存中去
+             * 对于每一个扩展，dubbo中只有个对应的ExtensionLoader实例
+             */
             EXTENSION_LOADERS.putIfAbsent(type, new ExtensionLoader<T>(type));
             loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         }
         return loader;
     }
-    //私有构造器
+
+    /**
+     * 实例化ExtensionLoader
+     * @param type
+     * 1. 将当前类型赋值给当前ExtensionLoader实例的type字段
+     * 2. 为当前实例创建一个Extension工厂
+     */
     private ExtensionLoader(Class<?> type) {
         this.type = type;
-        //对于扩展类型是ExtensionFactory的，设置为null
-        //getAdaptiveExtension方法获取一个运行时自适应的扩展类型
-        //每个Extension只能有一个@Adaptive类型的实现，如果么有，dubbo会自动生成一个类
-        //objectFactory是一个ExtensionFactory类型的属性，主要用于加载扩展的实现
-        objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
+        /**
+         * 对于扩展类型是ExtensionFactory的，设置为null
+         * getAdaptiveExtension方法获取一个运行时自适应的扩展类型
+         * 每个Extension只能有一个@Adaptive类型的实现，如果么有，dubbo会自动生成一个类
+         * objectFactory是一个ExtensionFactory类型的属性，主要用于加载扩展的实现
+         */
+
+        objectFactory = (
+                type == ExtensionFactory.class ?
+                        null :
+                        ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension()
+        );
     }
     
     public String getExtensionName(T extensionInstance) {
