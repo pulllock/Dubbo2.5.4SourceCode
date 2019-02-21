@@ -39,15 +39,15 @@ public class AdaptiveExtensionFactory implements ExtensionFactory {
         ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
         List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
         for (String name : loader.getSupportedExtensions()) {
-            //保存所有ExtensionFactory的实现
+            // 保存所有ExtensionFactory的实现
             list.add(loader.getExtension(name));
         }
         factories = Collections.unmodifiableList(list);
     }
 
     public <T> T getExtension(Class<T> type, String name) {
-        //依次遍历各个ExtensionFactory实现的getExtension方法
-        //找到Extension后立即返回，没找到返回null
+        // 依次遍历各个ExtensionFactory实现的getExtension方法
+        // 找到Extension后立即返回，没找到返回null
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);
             if (extension != null) {
