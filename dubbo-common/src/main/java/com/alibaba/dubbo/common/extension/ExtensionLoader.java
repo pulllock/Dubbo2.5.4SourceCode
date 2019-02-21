@@ -117,7 +117,9 @@ public class ExtensionLoader<T> {
      * 没有指定扩展点名字时，默认使用的名字,（注解上会有个默认名字）
      */
     private String cachedDefaultName;
-    // 用来缓存自适应扩展实现的实例
+    /**
+     * 用来缓存自适应扩展实现的实例
+     */
     private final Holder<Object> cachedAdaptiveInstance = new Holder<Object>();
     private volatile Throwable createAdaptiveInstanceError;
 
@@ -529,18 +531,19 @@ public class ExtensionLoader<T> {
      */
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
-        //先从实例缓存中查找实例对象
+        // 先从自适应实例缓存中查找实例对象
         Object instance = cachedAdaptiveInstance.get();
-        if (instance == null) {//缓存中不存在
+        // 缓存中不存在
+        if (instance == null) {
             if(createAdaptiveInstanceError == null) {
                 synchronized (cachedAdaptiveInstance) {
-                    //获取锁之后再检查一次缓存中是不是已经存在
+                    // 获取锁之后再检查一次缓存中是不是已经存在
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
-                            //缓存中没有，就创建新的AdaptiveExtension实例
+                            // 缓存中没有，就创建新的AdaptiveExtension实例
                             instance = createAdaptiveExtension();
-                            //新实例加入缓存
+                            // 新实例加入缓存
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
                             createAdaptiveInstanceError = t;
@@ -635,31 +638,32 @@ public class ExtensionLoader<T> {
                     type + ")  could not be instantiated: " + t.getMessage(), t);
         }
     }
-    // 扩展点自动注入
+    /**
+     * 扩展点自动注入
+     */
     private T injectExtension(T instance) {
         try {
+            // 在获取第一个扩展点的ExtensionLoader的实例的时候，objectFactory就被实例化了，是AdaptiveExtensionFactory
             if (objectFactory != null) {
+                // 遍历要注入的实例的方法
                 for (Method method : instance.getClass().getMethods()) {
-                    //处理set方法
+                    // 只处理set方法，比如setA，就是要把A注入到instance中
                     if (method.getName().startsWith("set")
                             && method.getParameterTypes().length == 1
                             && Modifier.isPublic(method.getModifiers())) {
-                        //set方法参数类型
+                        // set方法参数类型
                         Class<?> pt = method.getParameterTypes()[0];
                         try {
-                            //setter方法对应的属性名
+                            // setter方法对应的属性名，也就是扩展点接口名称
                             String property = method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
-                            //根据类型和名称信息从ExtensionFactory中获取
-                            //获取实现
-                            //为什么要使用对象工厂来获取setter方法中对应的实现？
-                            //不能通过spi直接获取自适应实现吗？比如ExtensionLoader.getExtension(pt);
-                            //因为setter方法中有可能是一个spi，也有可能是普通的bean
-                            //所以此时不能写死通过spi获取，还需要有其他方式来获取实现进行注入
-                            // dubbo中有两个实现，一个是spi的ExtensionFactory，一个是spring的ExtensionFactory
-                            //如果还有其他的，我们可以自定义ExtensionFactory
-                            //objectFactory是AdaptiveExtensionFactory实例
+                            /**
+                             * objectFactory是AdaptiveExtensionFactory实例
+                             * 比如这里的pt是com.alibaba.dubbo.rpc.Protocol，property是protocol
+                             * objectFactory就会根据这两个参数去获取Protocol对应的扩展实现的实例
+                             */
                             Object object = objectFactory.getExtension(pt, property);
-                            if (object != null) {//获取到了setter方法的参数的实现，可以进行注入
+                            // 获取到了setter方法的参数的实现，可以进行注入
+                            if (object != null) {
                                 method.invoke(instance, object);
                             }
                         } catch (Exception e) {
@@ -906,9 +910,11 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
-            //先通过getAdaptiveExtensionClass获取AdaptiveExtensionClass
-            //然后获取其实例
-            //最后进行注入处理
+            /**
+             * 先通过getAdaptiveExtensionClass获取自适应扩展类的Class
+             * 然后通过反射获取实例
+             * 最后如果自适应扩展依赖了其他的扩展点，就进行扩展点注入
+             */
             return injectExtension((T) getAdaptiveExtensionClass().newInstance());
         } catch (Exception e) {
             throw new IllegalStateException("Can not create adaptive extenstion " + type + ", cause: " + e.getMessage(), e);
@@ -920,16 +926,37 @@ public class ExtensionLoader<T> {
      * @return
      */
     private Class<?> getAdaptiveExtensionClass() {
-        //加载当前Extension的所有实现，如果有@Adaptive类型的实现类，会赋值给cachedAdaptiveClass
-        //目前只有AdaptiveExtensionFactory和AdaptiveCompiler两个实现类是被注解了@Adaptive
-        //除了ExtensionFactory和Compiler类型的扩展之外，其他类型的扩展都是下面动态创建的的实现
+        /**
+         * getExtensionClasses加载当前扩展点的所有实现
+         * 比如：
+         * 我们在使用ExtensionLoader.getExtensionLoader(Protocol.class)
+         * 获取Protocol的ExtensionLoader的时候，就已经设置了当前ExtensionLoader
+         * 的类型是Protocol的，所以这里获取的时候就是Protocol的所有实现。
+         *
+         * 获取到所有的实现之后，getExtensionClasses()返回的是Map<String, Class<?>>
+         *
+         * 另外需要说的是，如果扩展点的实现注解了类级别的@Adaptive注解，
+         * 这些实现的Class加载完后会赋值给cachedAdaptiveClass缓存。如果扩展点的实现
+         * 是包装类，这些实现的Class加载完后会放到cachedWrapperClasses缓存中。
+         * 其他的正常的扩展点的实现都会放到Map<String, Class<?>>中返回。
+         *
+         * 目前只有AdaptiveExtensionFactory和AdaptiveCompiler两个实现类是被注解了@Adaptive
+         * 也就是说这两个就是自适应扩展，如果要加载ExtensionFactory和Compiler的自适应扩展
+         * 不需要使用自动生成代码，而是直接使用两个实现类就可以了。
+         * 其他的扩展点如果想要获取自适应扩展实现，就需要继续往下走，使用生成的Xxx$Adaptive代码。
+         *
+         * 一个扩展点有且只有一个自适应扩展点，要么是内置的两个AdaptiveExtensionFactory和AdaptiveCompiler，
+         * 要么是生成的Xxx$Adaptive
+         */
         getExtensionClasses();
-        //加载完所有的实现之后，发现有cachedAdaptiveClass不为空
-        //也就是说当前获取的自适应实现类是AdaptiveExtensionFactory或者是AdaptiveCompiler，就直接返回，这两个类是特殊用处的，不用代码生成，而是现成的代码
+        /**
+         * 自适应扩展实现，在上面一步加载的时候，就会被加载缓存起来
+         * 只会执行一次，后面再获取的时候，就是获取缓存起来的这个。
+         */
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
-        //没有找到Adaptive类型的实现，动态创建一个
+        // 没有缓存自适应扩展实现，就动态创建一个
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
@@ -938,12 +965,16 @@ public class ExtensionLoader<T> {
      * @return
      */
     private Class<?> createAdaptiveExtensionClass() {
-        //组装代码
+        /**
+         * 根据具体的接口来生成自适应扩展类的代码
+         * 比如Protocol就会生成Protocol$Adaptive为名字的类的代码
+         */
         String code = createAdaptiveExtensionClassCode();
+        // 获取类加载器
         ClassLoader classLoader = findClassLoader();
-        //获取Compiler的自适应扩展，获取到的是AdaptiveCompiler实例
+        // 获取Compiler的自适应扩展，获取到的是AdaptiveCompiler实例
         com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
-        //如果我们没有指定名字，默认使用javassist
+        // 如果我们没有指定名字，默认使用javassist
         return compiler.compile(code, classLoader);
     }
 
@@ -953,7 +984,9 @@ public class ExtensionLoader<T> {
      */
     private String createAdaptiveExtensionClassCode() {
         StringBuilder codeBuidler = new StringBuilder();
+        // 获取到接口的所有方法
         Method[] methods = type.getMethods();
+        // 遍历所有的方法，查看是否有方法注解了@Adaptive
         boolean hasAdaptiveAnnotation = false;
         for(Method m : methods) {
             if(m.isAnnotationPresent(Adaptive.class)) {
@@ -961,14 +994,17 @@ public class ExtensionLoader<T> {
                 break;
             }
         }
-        // 完全没有Adaptive方法，则不需要生成Adaptive类
+        // 完全没有方法注解@Adaptive，则不需要生成自适应扩展类代码
         if(! hasAdaptiveAnnotation)
             throw new IllegalStateException("No adaptive method on extension " + type.getName() + ", refuse to create the adaptive class!");
-        
+        // 生成package
         codeBuidler.append("package " + type.getPackage().getName() + ";");
+        // 生成import
         codeBuidler.append("\nimport " + ExtensionLoader.class.getName() + ";");
+        // 生成类的名字，就是Xxxx$Adaptive，并且实现了当前类型的接口
         codeBuidler.append("\npublic class " + type.getSimpleName() + "$Adpative" + " implements " + type.getCanonicalName() + " {");
-        
+
+        // 遍历所有的方法进行处理
         for (Method method : methods) {
             Class<?> rt = method.getReturnType();
             Class<?>[] pts = method.getParameterTypes();
@@ -976,11 +1012,13 @@ public class ExtensionLoader<T> {
 
             Adaptive adaptiveAnnotation = method.getAnnotation(Adaptive.class);
             StringBuilder code = new StringBuilder(512);
+            // 如果一个方法没有注解@Adaptive，说明该方法不需要自适应扩展生成，直接生成抛出不支持的异常代码
             if (adaptiveAnnotation == null) {
                 code.append("throw new UnsupportedOperationException(\"method ")
                         .append(method.toString()).append(" of interface ")
                         .append(type.getName()).append(" is not adaptive method!\");");
             } else {
+                // 找到URL类型参数位置
                 int urlTypeIndex = -1;
                 for (int i = 0; i < pts.length; ++i) {
                     if (pts[i].equals(URL.class)) {
@@ -988,7 +1026,7 @@ public class ExtensionLoader<T> {
                         break;
                     }
                 }
-                // 有类型为URL的参数
+                // 有类型为URL的参数，需要校验url不能为null
                 if (urlTypeIndex != -1) {
                     // Null Point check
                     String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"url == null\");",
@@ -998,11 +1036,16 @@ public class ExtensionLoader<T> {
                     s = String.format("\n%s url = arg%d;", URL.class.getName(), urlTypeIndex); 
                     code.append(s);
                 }
-                // 参数没有URL类型
+                // 参数中没有URL类型的
                 else {
                     String attribMethod = null;
-                    
-                    // 找到参数的URL属性
+
+                    /**
+                     * 如果参数中没有URL类型的，需要遍历每个参数对象中的所有方法
+                     * 找到参数对象中的public URL getUrl() {return url;}方法
+                     *
+                     * 这个也可以获取到URL
+                     */
                     LBL_PTS:
                     for (int i = 0; i < pts.length; ++i) {
                         Method[] ms = pts[i].getMethods();
@@ -1019,6 +1062,11 @@ public class ExtensionLoader<T> {
                             }
                         }
                     }
+                    /**
+                     * 如果找不到URL类型的参数或者参数对象中没有获取URL的方法，直接抛异常
+                     *
+                     * URL对于dubbo来说相当于一个总线，所有的参数传递，都是在url中进行的
+                     */
                     if(attribMethod == null) {
                         throw new IllegalStateException("fail to create adative class for interface " + type.getName()
                         		+ ": not found url parameter or url attribute in parameters of method " + method.getName());
@@ -1035,9 +1083,9 @@ public class ExtensionLoader<T> {
                     s = String.format("%s url = arg%d.%s();",URL.class.getName(), urlTypeIndex, attribMethod); 
                     code.append(s);
                 }
-                
+                // 获取@Adaptive("xxxx,yyyy")中配置的value
                 String[] value = adaptiveAnnotation.value();
-                // 没有设置Key，则使用“扩展点接口名的点分隔 作为Key
+                // 没有设置Key，则使用“扩展点接口名的点分隔 作为Key，具体可参考@Adaptive注解中的注释说明
                 if(value.length == 0) {
                     char[] charArray = type.getSimpleName().toCharArray();
                     StringBuilder sb = new StringBuilder(128);
@@ -1067,7 +1115,8 @@ public class ExtensionLoader<T> {
                         break;
                     }
                 }
-                
+
+                // 组装extName
                 String defaultExtName = cachedDefaultName;
                 String getNameCode = null;
                 for (int i = value.length - 1; i >= 0; --i) {
