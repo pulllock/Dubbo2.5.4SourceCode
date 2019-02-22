@@ -37,22 +37,22 @@ import com.alibaba.dubbo.config.spring.ServiceBean;
  */
 
 /**
+ * Spring的扩展机制
  * Spring在这里就和Dubbo会和了，这里都是自定义的解析器。
  *  需要继承NamespaceHandlerSupport，实现init方法。
  */
 public class DubboNamespaceHandler extends NamespaceHandlerSupport {
 
-    //检查有没有重复的jar包
+    // 检查有没有重复的jar包
 	static {
 		Version.checkDuplicate(DubboNamespaceHandler.class);
 	}
 
 	public void init() {
-	    //对标签中名字为application的进行解析，这里dubbo使用了统一的DubboBeanDefinitionParser进行解析。
-        //DubboBeanDefinitionParser实现了BeanDefinitionParser接口，实现parse方法对标签进行解析。
-        //将解析之后的标签变成Spring中的一个Bean对象。
-        //application对应一个ApplicationConfig。
-        //在执行完init方法之后，spring会得到所有的下面这个10个handler
+        /**
+         * 对dubbo标签的解析都委托给了DubboBeanDefinitionParser
+         * 解析之后的标签就变成了Spring中的一个Bean对象
+         */
 	    registerBeanDefinitionParser("application", new DubboBeanDefinitionParser(ApplicationConfig.class, true));
         registerBeanDefinitionParser("module", new DubboBeanDefinitionParser(ModuleConfig.class, true));
         registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));
