@@ -104,10 +104,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected void checkRegistry() {
         // 兼容旧版本
         if (registries == null || registries.size() == 0) {
-            //获取注册中心地址
+            // 获取注册中心地址
             String address = ConfigUtils.getProperty("dubbo.registry.address");
             if (address != null && address.length() > 0) {
-                //保存注册中心的list
+                // 保存注册中心的list
                 registries = new ArrayList<RegistryConfig>();
                 String[] as = address.split("\\s*[|]+\\s*");
                 for (String a : as) {
@@ -126,7 +126,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                                                     + Version.getVersion()
                                                     + ", Please add <dubbo:registry address=\"...\" /> to your spring config. If you want unregister, please set <dubbo:service registry=\"N/A\" />");
         }
-        //添加属性
+        // 添加属性
         for (RegistryConfig registryConfig : registries) {
             appendProperties(registryConfig);
         }
@@ -145,7 +145,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             throw new IllegalStateException(
                                             "No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
         }
-        //填充各种Application的信息
+        // 填充各种Application的信息
         appendProperties(application);
         
         String wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_KEY);
@@ -159,23 +159,27 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
-    //加载注册中心地址
-    //如果xml没有配置，就从dubbo.properties中获取，
+    /**
+     * 加载注册中心地址
+     * 如果xml没有配置，就从dubbo.properties中获取
+     * @param provider
+     * @return
+     */
     protected List<URL> loadRegistries(boolean provider) {
-        //检查注册中心配置，并填充各种Registry属性
+        // 检查注册中心配置，如果不存在抛异常；如果存在填充各种Registry属性
         checkRegistry();
-        //存放注册中心的URL
+        // 存放注册中心的URL
         List<URL> registryList = new ArrayList<URL>();
         if (registries != null && registries.size() > 0) {
-            //遍历注册中心配置
+            // 遍历注册中心配置
             for (RegistryConfig config : registries) {
-                //获取配置中的注册中心地址
+                // 获取配置中的注册中心地址
                 String address = config.getAddress();
                 if (address == null || address.length() == 0) {
-                    //没配置，使用默认的0.0.0.0
+                    // 没配置，使用默认的0.0.0.0
                 	address = Constants.ANYHOST_VALUE;
                 }
-                //尝试从系统属性中获取
+                // 尝试从系统属性中获取
                 String sysaddress = System.getProperty("dubbo.registry.address");
                 if (sysaddress != null && sysaddress.length() > 0) {
                     address = sysaddress;
@@ -183,34 +187,39 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 if (address != null && address.length() > 0 
                         && ! RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
-                    //配置的application中的属性取出来放到map中
+                    // 配置的application中的属性取出来放到map中
                     appendParameters(map, application);
-                    //配置的registry中的属性取出来放到map中
+                    // 配置的registry中的属性取出来放到map中
                     appendParameters(map, config);
-                    //服务名
+                    // 服务名
                     map.put("path", RegistryService.class.getName());
-                    //dubbo的版本
+                    // dubbo的版本
                     map.put("dubbo", Version.getVersion());
-                    //时间戳
+                    // 时间戳
                     map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-                    //pid
+                    // pid
                     if (ConfigUtils.getPid() > 0) {
                         map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
                     }
-                    //map中不存在protocol，说明没有配置procotol
+                    // map中不存在protocol，说明没有配置procotol
                     if (! map.containsKey("protocol")) {
-                        //查看有没有名为remote的Registry的实现类
+                        // 查看有没有名为remote的Registry的实现类
                         if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
                             map.put("protocol", "remote");
-                        } else {//没有的话Protocol使用dubbo
+                        } else {
+                            // 没有的话Protocol使用dubbo
                             map.put("protocol", "dubbo");
                         }
                     }
-                    //解析生成url
-                    //zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&
-                    // dubbo=2.5.3&environment=product&organization=china&owner=cheng.xi&pid=17268&timestamp=1488986530185
+                    /**
+                     * 解析生成url
+                     * zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&
+                     * dubbo=2.5.3&environment=product&organization=china&owner=cheng.xi&pid=17268&timestamp=1488986530185
+                     * addres可能配置了多个，所有要解析成一个URL列表
+                     */
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
+                        // URL协议头设置为registry
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
@@ -221,8 +230,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 }
             }
         }
-        //返回的url为registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&dubbo=2.5.3&
-        // environment=product&organization=china&owner=cheng.xi&pid=17268&registry=zookeeper&timestamp=1488986530185
+        /**
+         * 返回的url为registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&dubbo=2.5.3&
+         * environment=product&organization=china&owner=cheng.xi&pid=17268&registry=zookeeper&timestamp=1488986530185
+         */
         return registryList;
     }
     
