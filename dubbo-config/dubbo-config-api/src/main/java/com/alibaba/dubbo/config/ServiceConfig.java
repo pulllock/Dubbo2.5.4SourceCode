@@ -562,19 +562,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void exportLocal(URL url) {
-        //不是injvm
+        // 不是injvm
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
-            //转换成local
-            //injvm://127.0.0.1/dubbo.common.hello.service.HelloService?anyhost=true&application=dubbo-provider&application.version=1.0&dubbo=2.5.3
+            // 转换成local
+            // injvm://127.0.0.1/dubbo.common.hello.service.HelloService?anyhost=true&application=dubbo-provider&application.version=1.0&dubbo=2.5.3
             // &environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=cheng.xi
             // &pid=28191&side=provider&timestamp=1489027396094
             URL local = URL.valueOf(url.toFullString())
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
-            //protocol是根据spi自动生成的，里面会根据协议来判断调用哪个具体的实现
-            //这里会使用InjvmProtocol
-            //先获取Invoker，然后根据协议将Invoker暴露成Exporter
+            // protocol是根据spi自动生成的，里面会根据协议来判断调用哪个具体的实现
+            // 这里会使用InjvmProtocol
+            // 先获取Invoker，然后根据协议将Invoker暴露成Exporter
             Exporter<?> exporter = protocol.export(
                     proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
             exporters.add(exporter);
