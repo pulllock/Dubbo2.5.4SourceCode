@@ -543,8 +543,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         // 获取Invoker
                         // proxyFactory是动态生成的代码，其中的getInvoker是调用JavassistProxyFactory(外面还有一层StubProxyFactoryWrapper的包装)的getInvoker方法
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
-                        // 根据协议将invoker暴露成exporter
-                        // 暴露封装服务的invoker
+                        /**
+                         * 根据协议将invoker暴露成exporter
+                         * 暴露封装服务的invoker
+                         * invoker中url是registry://这种的
+                         * 所以这里protocol实际上是RegistryProtocol，
+                         * 并且外面包装了ProtocolFilterWrapper和ProtocolFilterWrapper
+                         */
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }

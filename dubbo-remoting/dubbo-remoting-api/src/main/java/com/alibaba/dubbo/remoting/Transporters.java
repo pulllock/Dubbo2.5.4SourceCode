@@ -45,6 +45,7 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // 获取Transporter也是使用自适应获取，默认是NettyTransporter
         return getTransporter().bind(url, handler);
     }
 
