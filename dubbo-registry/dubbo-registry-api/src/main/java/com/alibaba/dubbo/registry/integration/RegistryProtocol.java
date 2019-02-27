@@ -96,26 +96,42 @@ public class RegistryProtocol implements Protocol {
 		return overrideListeners;
 	}
 
-	//用于解决rmi重复暴露端口冲突的问题，已经暴露过的服务不再重新暴露
-    //providerurl <--> exporter
+    /**
+     * 用于解决rmi重复暴露端口冲突的问题，已经暴露过的服务不再重新暴露
+     * providerurl <--> exporter
+     */
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
     
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
+        // 导出服务
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider
+        /**
+         * 获取Registry的实现类，由于我们配置的注册中心是zookeeper，url中的registry=zookeeper
+         * 所以这里我们获取到的实现类是ZookeeperRegistry
+         */
         final Registry registry = getRegistry(originInvoker);
+        // 获取已经注册的服务提供者的URL，就是dubbo://开头的
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
+        /**
+         * 向注册中心注册服务，我们这就是写zookeeper结点
+         * ZookeeperRegistry继承了FailbackRegistry，
+         * FailbackRegistry继承了AbstractRegistry
+         */
         registry.register(registedProviderUrl);
         // 订阅override数据
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
+        // 获取订阅的URL，就是以provider://开头的
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
+        // 创建override监听器
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
+        // 向注册中心订阅override数据
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
-        //保证每次export都返回一个新的exporter实例
+        // 保证每次export都返回一个新的exporter实例
         return new Exporter<T>() {
             public Invoker<T> getInvoker() {
                 return exporter.getInvoker();
@@ -143,14 +159,25 @@ public class RegistryProtocol implements Protocol {
     
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T>  doLocalExport(final Invoker<T> originInvoker){
+        // 获取key，该key用于缓存导出的服务，具体可看bounds上的注释，key是provider的url
         String key = getCacheKey(originInvoker);
+        // 先从缓存中获取，不存在就导出添加到缓存中
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
+                    /**
+                     * 先创建了一个Invoker代理类，里面持有原来的Invoker(registry://开头的)
+                     * 还持有服务提供者的URL（dubbo://开头的）
+                     */
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+                    /**
+                     * 先使用具体协议的protocol进行导出服务，我们这里是DubboProtocol
+                     * 然后将导出的Exporter和原来的Invoker封装成ExporterChangeableWrapper实例返回
+                     */
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>)protocol.export(invokerDelegete), originInvoker);
+                    // 已经暴露的服务添加到缓存中
                     bounds.put(key, exporter);
                 }
             }
@@ -197,7 +224,7 @@ public class RegistryProtocol implements Protocol {
      */
     private URL getRegistedProviderUrl(final Invoker<?> originInvoker){
         URL providerUrl = getProviderUrl(originInvoker);
-        //注册中心看到的地址
+        // 注册中心看到的地址
         final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl)).removeParameter(Constants.MONITOR_KEY);
         return registedProviderUrl;
     }

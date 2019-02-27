@@ -50,9 +50,14 @@ public class ProtocolListenerWrapper implements Protocol {
     }
 
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // registry类型的，不需要处理，直接交给下面的Wrapper处理
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        /**
+         * 非registry类型的，比如dubbo类型的，需要先调用下面的Wrapper以及实际DubboProtocol进行处理，
+         * 然后将结果包装成ListenerExporterWrapper类型返回
+         */
         return new ListenerExporterWrapper<T>(protocol.export(invoker), 
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), Constants.EXPORTER_LISTENER_KEY)));

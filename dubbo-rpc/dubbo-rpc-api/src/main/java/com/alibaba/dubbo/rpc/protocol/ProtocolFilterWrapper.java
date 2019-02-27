@@ -49,9 +49,18 @@ public class ProtocolFilterWrapper implements Protocol {
     }
 
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // registry类型的，不需要处理，直接交给下面的Wrapper处理
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        /**
+         * 非registry类型的，也即是具体类型的protocol，比如dubbo类型
+         * 会先进行构建一个Invoker链的操作，在调用具体的DubboProtocol进行导出服务
+         *
+         * 构建过滤器链的操作，是ExtensionLoader的getActiveExtension获取的，
+         * 也就是根据url中配置的参数来进行获取。
+         * 我们也可以实现自己的Filter添加进来，导出服务的时候就会经过Filter的过滤操作
+         */
         return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
     }
 
