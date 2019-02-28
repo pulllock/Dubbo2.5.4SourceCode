@@ -87,10 +87,12 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
         // 锁定注册中心获取过程，保证注册中心单一实例
         LOCK.lock();
         try {
+            // 先从缓存中获取
             Registry registry = REGISTRIES.get(key);
             if (registry != null) {
                 return registry;
             }
+            // 创建注册中心，具体子类实现
             registry = createRegistry(url);
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);

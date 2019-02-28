@@ -122,8 +122,11 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override
     public void register(URL url) {
+        // 先调用父类的方法
         super.register(url);
+        // 注册失败的Set中移除
         failedRegistered.remove(url);
+        // 取消注册失败的Set中移除
         failedUnregistered.remove(url);
         try {
             // 向服务器端发送注册请求
