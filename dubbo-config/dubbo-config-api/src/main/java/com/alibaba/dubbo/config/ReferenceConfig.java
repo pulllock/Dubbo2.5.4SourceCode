@@ -338,10 +338,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 		URL tmpUrl = new URL("temp", "localhost", 0, map);
 		final boolean isJvmRefer;
         if (isInjvm() == null) {
-            if (url != null && url.length() > 0) { //指定URL的情况下，不做本地引用
+            // 指定URL的情况下，不做本地引用
+            if (url != null && url.length() > 0) {
                 isJvmRefer = false;
             } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
-                //默认情况下如果本地有服务暴露，则引用本地服务.
+                // 默认情况下如果本地有服务暴露，则引用本地服务.
                 isJvmRefer = true;
             } else {
                 isJvmRefer = false;
@@ -349,30 +350,40 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         } else {
             isJvmRefer = isInjvm().booleanValue();
         }
-		
+
+        // 本地引用
 		if (isJvmRefer) {
+		    // 本地应用的URL，就是injvm://开头的
 			URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
+			// 创建InjvmInvoker实例
 			invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
 		} else {
-            if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
+		    // 远程引用
+            // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
+            if (url != null && url.length() > 0) {
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
+                // 可能会配置多个URL，分号分隔的
                 if (us != null && us.length > 0) {
                     for (String u : us) {
                         URL url = URL.valueOf(u);
                         if (url.getPath() == null || url.getPath().length() == 0) {
                             url = url.setPath(interfaceName);
                         }
+
+                        // registry协议的，说明是要使用指定的注册中心
                         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
                             urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
                         } else {
+                            // 合并url
                             urls.add(ClusterUtils.mergeUrl(url, map));
                         }
                     }
                 }
-            } else { // 通过注册中心配置拼装URL
+            } else {
+                // 加载注册中心的URL
             	List<URL> us = loadRegistries(false);
             	if (us != null && us.size() > 0) {
                 	for (URL u : us) {
@@ -388,22 +399,33 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
 
+            // 可能是单个注册中心，也可能是单个服务提供者
             if (urls.size() == 1) {
+                // 构建Invoker实例
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             } else {
+                // 多个注册中心或者多个服务提供者
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
+                // 得到所有的Invoker
                 for (URL url : urls) {
                     invokers.add(refprotocol.refer(interfaceClass, url));
                     if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                        registryURL = url; // 用了最后一个registry url
+                        // 用了最后一个registry url
+                        registryURL = url;
                     }
                 }
-                if (registryURL != null) { // 有 注册中心协议的URL
-                    // 对有注册中心的Cluster 只用 AvailableCluster
-                    URL u = registryURL.addParameter(Constants.CLUSTER_KEY, AvailableCluster.NAME); 
+                // 有注册中心协议的URL
+                if (registryURL != null) {
+                    // 对有注册中心的Cluster使用 AvailableCluster
+                    URL u = registryURL.addParameter(Constants.CLUSTER_KEY, AvailableCluster.NAME);
+                    /**
+                     * 创建StaticDirectory实例
+                     * Cluster合并对个Invoker
+                     */
                     invoker = cluster.join(new StaticDirectory(u, invokers));
-                }  else { // 不是 注册中心的URL
+                }  else {
+                    // 没有注册中心
                     invoker = cluster.join(new StaticDirectory(invokers));
                 }
             }
