@@ -66,7 +66,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
             group = Constants.PATH_SEPARATOR + group;
         }
         this.root = group;
+        // 创建zookeeper的客户端
         zkClient = zookeeperTransporter.connect(url);
+        // 添加状态监听器
         zkClient.addStateListener(new StateListener() {
             public void stateChanged(int state) {
             	if (state == RECONNECTED) {

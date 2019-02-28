@@ -209,11 +209,14 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private Registry getRegistry(final Invoker<?> originInvoker){
+        // 获取registryUrl，就是以registry://开头的
         URL registryUrl = originInvoker.getUrl();
+        // 获取url中的registry属性，我们这里用的是zookeeper
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
         }
+        // registryFactory也是spi生成的代码，这里最后获得是ZookeeperRegistry
         return registryFactory.getRegistry(registryUrl);
     }
 
