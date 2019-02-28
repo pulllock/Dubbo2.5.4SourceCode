@@ -266,13 +266,19 @@ public class RegistryProtocol implements Protocol {
     
     @SuppressWarnings("unchecked")
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // 从url中得到protocol，我们这里是zookeeper，然后删除url中的registry属性
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
+        /**
+         * 获取Registry的实现类，由于我们配置的注册中心是zookeeper
+         * 所以这里我们获取到的实现类是ZookeeperRegistry
+         */
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
         	return proxyFactory.getInvoker((T) registry, type, url);
         }
 
         // group="a,b" or group="*"
+        // 配置了group
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
         if (group != null && group.length() > 0 ) {
@@ -281,6 +287,7 @@ public class RegistryProtocol implements Protocol {
                 return doRefer( getMergeableCluster(), registry, type, url );
             }
         }
+        // 引用服务
         return doRefer(cluster, registry, type, url);
     }
     
@@ -289,19 +296,29 @@ public class RegistryProtocol implements Protocol {
     }
     
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        /**
+         * 实例化一个RegistryDirectory，Directory类似一个List，
+         * 内部持有多个Invoker的列表。
+         * RegistryDirectory是动态的，他实现了监听接口，里面的Invoker是可以变化的。
+         * 还有一个StaticDirectory是静态的，他内部的Invoker是不可变的。
+         */
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
+        // 获取消费者服务的URL，以consumer://开头
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
         if (! Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
+            // 注册到注册中心去
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+        // 订阅providers、configurators、routers等结点
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 
                 + "," + Constants.CONFIGURATORS_CATEGORY 
                 + "," + Constants.ROUTERS_CATEGORY));
+        // 一个注册中心可能有多个服务提供者，这里需要将多个提供者合并为一个Invoker
         return cluster.join(directory);
     }
 
