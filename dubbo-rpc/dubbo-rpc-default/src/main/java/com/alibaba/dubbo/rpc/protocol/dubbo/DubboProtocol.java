@@ -314,16 +314,24 @@ public class DubboProtocol extends AbstractProtocol {
 
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         // create rpc invoker.
+        /**
+         * 创建DubboInvoker实例
+         * 先调用getClients方法服务连接
+         *
+         * serviceType是接口，比如me.cxis.dubbo.service.HelloService
+         * url就是dubbo://的url
+         * invokers就是Invoker的一个Set
+         */
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
         return invoker;
     }
     
     private ExchangeClient[] getClients(URL url){
-        //是否共享连接
+        // 是否共享连接
         boolean service_share_connect = false;
         int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
-        //如果connections不配置，则共享连接，否则每服务每连接
+        // 如果connections不配置，则共享连接，否则每服务每连接
         if (connections == 0){
             service_share_connect = true;
             connections = 1;
@@ -344,7 +352,9 @@ public class DubboProtocol extends AbstractProtocol {
      *获取共享连接 
      */
     private ExchangeClient getSharedClient(URL url){
+        // xxx.xxx.xxx.xxx:20080
         String key = url.getAddress();
+        // 引用的Client缓存
         ReferenceCountExchangeClient client = referenceClientMap.get(key);
         if ( client != null ){
             if ( !client.isClosed()){
@@ -355,8 +365,10 @@ public class DubboProtocol extends AbstractProtocol {
                 referenceClientMap.remove(key);
             }
         }
+        // 创建新连接
         ExchangeClient exchagneclient = initClient(url);
-        
+
+        // 将新连接封装一下，返回
         client = new ReferenceCountExchangeClient(exchagneclient, ghostClientMap);
         referenceClientMap.put(key, client);
         ghostClientMap.remove(key);
@@ -369,8 +381,10 @@ public class DubboProtocol extends AbstractProtocol {
     private ExchangeClient initClient(URL url) {
         
         // client type setting.
+        // 默认netty
         String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
 
+        // dubbo版本
         String version = url.getParameter(Constants.DUBBO_VERSION_KEY);
         boolean compatible = (version != null && version.startsWith("1.0."));
         url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() && compatible ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
@@ -389,6 +403,7 @@ public class DubboProtocol extends AbstractProtocol {
             if (url.getParameter(Constants.LAZY_CONNECT_KEY, false)){
                 client = new LazyConnectExchangeClient(url ,requestHandler);
             } else {
+                // 连接client
                 client = Exchangers.connect(url ,requestHandler);
             }
         } catch (RemotingException e) {
