@@ -57,6 +57,8 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
  * 
  * @author william.liangf
  * @author chao.liuc
+ * 动态服务目录，实现了NotifyListener接口，注册中心服务发生变化后，
+ * 当前动态服务目录会收到通知，并刷新Invoker列表。
  */
 public class RegistryDirectory<T> extends AbstractDirectory<T> implements NotifyListener {
 
@@ -575,10 +577,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     public List<Invoker<T>> doList(Invocation invocation) {
+        // 服务提供这关闭或者禁用
         if (forbidden) {
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "Forbid consumer " +  NetUtils.getLocalHost() + " access service " + getInterface().getName() + " from registry " + getUrl().getAddress() + " use dubbo version " + Version.getVersion() + ", Please check registry access list (whitelist/blacklist).");
         }
         List<Invoker<T>> invokers = null;
+        // Invoker本地缓存
         Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
             String methodName = RpcUtils.getMethodName(invocation);
@@ -588,9 +592,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 invokers = localMethodInvokerMap.get(methodName + "." + args[0]); // 可根据第一个参数枚举路由
             }
             if(invokers == null) {
+                // 通过方法名获取Invoker列表，一般普通调用都会在这里获取到
                 invokers = localMethodInvokerMap.get(methodName);
             }
             if(invokers == null) {
+                // 通过*获取Invoker列表，泛化调用会使用到
                 invokers = localMethodInvokerMap.get(Constants.ANY_VALUE);
             }
             if(invokers == null) {
@@ -600,6 +606,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 }
             }
         }
+        // 返回Invoker列表
         return invokers == null ? new ArrayList<Invoker<T>>(0) : invokers;
     }
     

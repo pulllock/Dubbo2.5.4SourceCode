@@ -27,6 +27,7 @@ import com.alibaba.dubbo.rpc.cluster.Router;
  * StaticDirectory
  * 
  * @author william.liangf
+ * 静态服务目录，内部的Invoker是不会变的，和List类似
  */
 public class StaticDirectory<T> extends AbstractDirectory<T> {
     
