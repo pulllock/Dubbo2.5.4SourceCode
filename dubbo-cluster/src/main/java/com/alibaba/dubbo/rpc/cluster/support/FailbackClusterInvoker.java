@@ -61,11 +61,13 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
         if (retryFuture == null) {
             synchronized (this) {
                 if (retryFuture == null) {
+                    // 定时任务，5秒执行一次
                     retryFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
 
                         public void run() {
                             // 收集统计信息
                             try {
+                                // 重试失败的调用
                                 retryFailed();
                             } catch (Throwable t) { // 防御性容错
                                 logger.error("Unexpected error occur at collect statistic", t);
@@ -103,6 +105,7 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
         } catch (Throwable e) {
             logger.error("Failback to invoke method " + invocation.getMethodName() + ", wait for retry in background. Ignored exception: "
                                  + e.getMessage() + ", ", e);
+            // 调用中发生异常，记录失败，并且返回一个空的结果给消费者
             addFailed(invocation, this);
             return new RpcResult(); // ignore
         }
