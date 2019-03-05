@@ -53,14 +53,16 @@ public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T>{
     public Result doInvoke(final Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         checkInvokers(invokers, invocation);
         final List<Invoker<T>> selected;
+        // forks配置，默认2
         final int forks = getUrl().getParameter(Constants.FORKS_KEY, Constants.DEFAULT_FORKS);
+        // 默认超时1s
         final int timeout = getUrl().getParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
         if (forks <= 0 || forks >= invokers.size()) {
             selected = invokers;
         } else {
             selected = new ArrayList<Invoker<T>>();
             for (int i = 0; i < forks; i++) {
-                //在invoker列表(排除selected)后,如果没有选够,则存在重复循环问题.见select实现.
+                // 在invoker列表(排除selected)后,如果没有选够,则存在重复循环问题.见select实现.
                 Invoker<T> invoker = select(loadbalance, invocation, invokers, selected);
                 if(!selected.contains(invoker)){//防止重复添加invoker
                     selected.add(invoker);
@@ -75,10 +77,12 @@ public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T>{
                 public void run() {
                     try {
                         Result result = invoker.invoke(invocation);
+                        // 结果放入阻塞队列
                         ref.offer(result);
                     } catch(Throwable e) {
                         int value = count.incrementAndGet();
                         if (value >= selected.size()) {
+                            // 异常放入阻塞队列
                             ref.offer(e);
                         }
                     }
@@ -86,6 +90,7 @@ public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T>{
             });
         }
         try {
+            // 从阻塞队列中拿结果
             Object ret = ref.poll(timeout, TimeUnit.MILLISECONDS);
             if (ret instanceof Throwable) {
                 Throwable e = (Throwable) ret;
