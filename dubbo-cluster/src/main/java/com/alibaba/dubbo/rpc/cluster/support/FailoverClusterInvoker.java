@@ -53,6 +53,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
     	List<Invoker<T>> copyinvokers = invokers;
     	checkInvokers(copyinvokers, invocation);
+    	// 获取重试次数，默认是2
         int len = getUrl().getMethodParameter(invocation.getMethodName(), Constants.RETRIES_KEY, Constants.DEFAULT_RETRIES) + 1;
         if (len <= 0) {
             len = 1;
@@ -61,19 +62,23 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         RpcException le = null; // last exception.
         List<Invoker<T>> invoked = new ArrayList<Invoker<T>>(copyinvokers.size()); // invoked invokers.
         Set<String> providers = new HashSet<String>(len);
+        // 循环调用，失败重试
         for (int i = 0; i < len; i++) {
-        	//重试时，进行重新选择，避免重试时invoker列表已发生变化.
-        	//注意：如果列表发生了变化，那么invoked判断会失效，因为invoker示例已经改变
+        	// 重试时，进行重新选择，避免重试时invoker列表已发生变化.
+        	// 注意：如果列表发生了变化，那么invoked判断会失效，因为invoker示例已经改变
         	if (i > 0) {
         		checkWhetherDestroyed();
         		copyinvokers = list(invocation);
-        		//重新检查一下
+        		// 重新检查一下
         		checkInvokers(copyinvokers, invocation);
         	}
+        	// 通过负载均衡选择一个Invoker
             Invoker<T> invoker = select(loadbalance, invocation, copyinvokers, invoked);
             invoked.add(invoker);
+            // 将invoked设置到RPC上下文中
             RpcContext.getContext().setInvokers((List)invoked);
             try {
+                // 调用实际Invoker的invoke方法
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + invocation.getMethodName()
