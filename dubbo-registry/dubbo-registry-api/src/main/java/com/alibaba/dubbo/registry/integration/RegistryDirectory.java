@@ -156,9 +156,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     public synchronized void notify(List<URL> urls) {
+        // 服务提供者URL
         List<URL> invokerUrls = new ArrayList<URL>();
+        // 路由URL
         List<URL> routerUrls = new ArrayList<URL>();
+        // 配置URL
         List<URL> configuratorUrls = new ArrayList<URL>();
+
+        // 循环，分类
         for (URL url : urls) {
             String protocol = url.getProtocol();
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
@@ -174,12 +179,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
             }
         }
-        // configurators 
+        // configurators
         if (configuratorUrls != null && configuratorUrls.size() >0 ){
+            // 将url转成Configurator
             this.configurators = toConfigurators(configuratorUrls);
         }
         // routers
         if (routerUrls != null && routerUrls.size() >0 ){
+            // 转换成Router
             List<Router> routers = toRouters(routerUrls);
             if(routers != null){ // null - do nothing
                 setRouters(routers);
@@ -193,7 +200,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);
             }
         }
-        // providers
+        // providers 刷新Invoker列表
         refreshInvoker(invokerUrls);
     }
     
@@ -206,6 +213,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param invokerUrls 传入的参数不能为null
      */
     private void refreshInvoker(List<URL> invokerUrls){
+        /**
+         * invokerUrls只有一个，并且协议头是empty
+         * 表示禁用所有服务
+         */
         if (invokerUrls != null && invokerUrls.size() == 1 && invokerUrls.get(0) != null
                 && Constants.EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
             this.forbidden = true; // 禁止访问
@@ -231,9 +242,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.error(new IllegalStateException("urls to invokers error .invokerUrls.size :"+invokerUrls.size() + ", invoker.size :0. urls :"+invokerUrls.toString()));
                 return ;
             }
+            // 合并多个组的Invoker
             this.methodInvokerMap = multiGroup ? toMergeMethodInvokerMap(newMethodInvokerMap) : newMethodInvokerMap;
             this.urlInvokerMap = newUrlInvokerMap;
             try{
+                // 销毁无用Invoker，避免消费者调用已下线的服务
                 destroyUnusedInvokers(oldUrlInvokerMap,newUrlInvokerMap); // 关闭未使用的Invoker
             }catch (Exception e) {
                 logger.warn("destroyUnusedInvokers error. ", e);
@@ -351,30 +364,37 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             return newUrlInvokerMap;
         }
         Set<String> keys = new HashSet<String>();
+        // 获取服务消费端配置的协议
         String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);
         for (URL providerUrl : urls) {
-        	//如果reference端配置了protocol，则只选择匹配的protocol
+        	// 如果reference端配置了protocol，则只选择匹配的protocol
         	if (queryProtocols != null && queryProtocols.length() >0) {
         		boolean accept = false;
         		String[] acceptProtocols = queryProtocols.split(",");
+        		// 检测服务消费者协议是否被服务提供者支持
         		for (String acceptProtocol : acceptProtocols) {
         			if (providerUrl.getProtocol().equals(acceptProtocol)) {
         				accept = true;
         				break;
         			}
         		}
+        		// 消费者的协议不被支持，忽略
         		if (!accept) {
         			continue;
         		}
         	}
+        	// empty协议忽略
             if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
                 continue;
             }
+            // SPI检测服务提供者协议是否被支持
             if (! ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost() 
                         + ", supported protocol: "+ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;
             }
+
+            // 合并url
             URL url = mergeUrl(providerUrl);
             
             String key = url.toFullString(); // URL参数是排序的
@@ -394,6 +414,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 		enabled = url.getParameter(Constants.ENABLED_KEY, true);
                 	}
                 	if (enabled) {
+                	    // 获取Invoker
                 		invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
                 	}
                 } catch (Throwable t) {
@@ -502,6 +523,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 if (methodInvokers == null || methodInvokers.size() == 0) {
                     methodInvokers = invokersList;
                 }
+                // 方法级别路由
                 newMethodInvokerMap.put(method, route(methodInvokers, method));
             }
         }
