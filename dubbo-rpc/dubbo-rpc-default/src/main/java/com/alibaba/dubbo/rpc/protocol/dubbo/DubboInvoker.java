@@ -79,20 +79,32 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
+            // 异步配置
             boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);
+            // 单向通信配置
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
             int timeout = getUrl().getMethodParameter(methodName, Constants.TIMEOUT_KEY,Constants.DEFAULT_TIMEOUT);
+            // 异步无返回值
             if (isOneway) {
             	boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
+            	// 发送请求
                 currentClient.send(inv, isSent);
+                // 设置future为null
                 RpcContext.getContext().setFuture(null);
+                // 返回空的RpcResult
                 return new RpcResult();
             } else if (isAsync) {
+                // 异步有返回值
+                // 发送请求，得到ResponseFuture
             	ResponseFuture future = currentClient.request(inv, timeout) ;
+            	// 设置future
                 RpcContext.getContext().setFuture(new FutureAdapter<Object>(future));
+                // 暂时返回一个空RpcResult
                 return new RpcResult();
             } else {
+                // 同步调用
             	RpcContext.getContext().setFuture(null);
+            	// 发送请求，调用future的get阻塞等待结果
                 return (Result) currentClient.request(inv, timeout).get();
             }
         } catch (TimeoutException e) {
