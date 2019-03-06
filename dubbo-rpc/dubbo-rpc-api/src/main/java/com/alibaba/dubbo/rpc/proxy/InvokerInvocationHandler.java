@@ -37,9 +37,11 @@ public class InvokerInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
+        // Object类中的方法，直接调用
         if (method.getDeclaringClass() == Object.class) {
             return method.invoke(invoker, args);
         }
+        // toString hashCode equals等被子类重写，直接调用
         if ("toString".equals(methodName) && parameterTypes.length == 0) {
             return invoker.toString();
         }
@@ -49,6 +51,14 @@ public class InvokerInvocationHandler implements InvocationHandler {
         if ("equals".equals(methodName) && parameterTypes.length == 1) {
             return invoker.equals(args[0]);
         }
+        /**
+         * 将方法和参数封装成RpcInvocation
+         * 调用
+         * recreate
+         *
+         * invoker是MockClusterInvoker，
+         * MockClusterInvoker内部封装了服务降级逻辑
+         */
         return invoker.invoke(new RpcInvocation(method, args)).recreate();
     }
 
