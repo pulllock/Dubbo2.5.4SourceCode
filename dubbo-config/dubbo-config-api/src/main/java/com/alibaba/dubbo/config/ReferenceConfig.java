@@ -130,6 +130,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return urls;
     }
 
+    /**
+     * 1. 继续初始化ReferenceConfig对象
+     * 2. 校验ReferenceConfig对象的配置项
+     * 3. 生成URL对象
+     * 4. 使用URL对象引用服务
+     * @return
+     */
     public synchronized T get() {
         if (destroyed){
             throw new IllegalStateException("Already destroyed!");

@@ -68,23 +68,46 @@ import com.alibaba.dubbo.common.utils.StringUtils;
  * @author ding.lid
  * @see java.net.URL
  * @see java.net.URI
+ *
+ * 格式如：protocol://username:password@host:port/path?key=value&key=value
  */
 public final class URL implements Serializable {
 
     private static final long serialVersionUID = -1985165475234910535L;
 
+    /**
+     * 协议
+     */
     private final String protocol;
 
+    /**
+     * 用户名
+     */
 	private final String username;
 
+    /**
+     * 密码
+     */
 	private final String password;
 
+    /**
+     * 地址
+     */
 	private final String host;
 
+    /**
+     * 端口
+     */
 	private final int port;
 
+    /**
+     * 服务名，路径
+     */
 	private final String path;
 
+    /**
+     * 参数集合
+     */
     private final Map<String, String> parameters;
     
     // ==== cache ====

@@ -117,6 +117,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 同步方法，一次只发布一个服务
+     * 1. 继续填充ServiceConfig对象
+     * 2. 校验ServiceConfig对象的配置项
+     * 3. 使用ServiceConfig对象生成URL对象
+     * 4. 使用URL进行服务暴露
      */
     public synchronized void export() {
         /**
