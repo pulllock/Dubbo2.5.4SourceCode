@@ -90,8 +90,10 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
      */
     @SuppressWarnings("unchecked")
     private static BeanDefinition parse(Element element, ParserContext parserContext, Class<?> beanClass, boolean required) {
+        // 创建RootBeanDefinition
         RootBeanDefinition beanDefinition = new RootBeanDefinition();
         beanDefinition.setBeanClass(beanClass);
+        // 引用缺省是延迟初始化的
         beanDefinition.setLazyInit(false);
         // 得到标签的id属性
         String id = element.getAttribute("id");
@@ -132,7 +134,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             // 设置bean的id属性
             beanDefinition.getPropertyValues().addPropertyValue("id", id);
         }
-        // 如果是protocol标签
+        // 如果是protocol标签，处理protocol特殊情况
         if (ProtocolConfig.class.equals(beanClass)) {
             // 获取所有的bean的name
             for (String name : parserContext.getRegistry().getBeanDefinitionNames()) {
@@ -140,7 +142,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 BeanDefinition definition = parserContext.getRegistry().getBeanDefinition(name);
                 // 找到已经解析过得protocol属性
                 PropertyValue property = definition.getPropertyValues().getPropertyValue("protocol");
-                // 如果存在protocol熟悉感你
+                // 如果存在protocol
                 if (property != null) {
                     Object value = property.getValue();
                     if (value instanceof ProtocolConfig && id.equals(((ProtocolConfig) value).getName())) {
