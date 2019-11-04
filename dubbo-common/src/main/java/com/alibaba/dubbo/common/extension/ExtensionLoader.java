@@ -91,7 +91,9 @@ public class ExtensionLoader<T> {
      * dubbo的这个框架是自包含的，例如这个框架自身实现的代码ExtesionFactory也使用了扩展点的能力。
      */
     private final ExtensionFactory objectFactory;
-    //
+    /**
+     * 扩展类和扩展名的映射关系缓存
+     */
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
     /**
      * 用来缓存当前扩展点所有的实现类的Class
@@ -99,6 +101,9 @@ public class ExtensionLoader<T> {
      */
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String,Class<?>>>();
 
+    /**
+     * 拓展名与@Active的映射
+     */
     private final Map<String, Activate> cachedActivates = new ConcurrentHashMap<String, Activate>();
     /**
      * 自适应实现类的Class缓存
