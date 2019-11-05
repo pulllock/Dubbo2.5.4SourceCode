@@ -36,10 +36,15 @@ import com.alibaba.dubbo.common.utils.NamedThreadFactory;
 public class LimitedThreadPool implements ThreadPool {
 
     public Executor getExecutor(URL url) {
+        // 线程池名字
         String name = url.getParameter(Constants.THREAD_NAME_KEY, Constants.DEFAULT_THREAD_NAME);
+        // 核心线程数，默认0
         int cores = url.getParameter(Constants.CORE_THREADS_KEY, Constants.DEFAULT_CORE_THREADS);
+        // 最大线程数，默认200
         int threads = url.getParameter(Constants.THREADS_KEY, Constants.DEFAULT_THREADS);
+        // 队列数，默认0
         int queues = url.getParameter(Constants.QUEUES_KEY, Constants.DEFAULT_QUEUES);
+        // keepAlive设置成Long.MAX_VALUE，意味着线程一直增长但不会删除
         return new ThreadPoolExecutor(cores, threads, Long.MAX_VALUE, TimeUnit.MILLISECONDS, 
         		queues == 0 ? new SynchronousQueue<Runnable>() : 
         			(queues < 0 ? new LinkedBlockingQueue<Runnable>() 

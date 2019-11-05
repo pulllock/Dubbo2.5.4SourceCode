@@ -36,9 +36,20 @@ import com.alibaba.dubbo.common.utils.NamedThreadFactory;
 public class FixedThreadPool implements ThreadPool {
 
     public Executor getExecutor(URL url) {
+        // 线程名字
         String name = url.getParameter(Constants.THREAD_NAME_KEY, Constants.DEFAULT_THREAD_NAME);
+        // 线程数，默认200
         int threads = url.getParameter(Constants.THREADS_KEY, Constants.DEFAULT_THREADS);
+        // 队列数，默认0
         int queues = url.getParameter(Constants.QUEUES_KEY, Constants.DEFAULT_QUEUES);
+        /**
+         * 创建线程池：
+         * 核心和最大线程数相等，
+         * queues=0的时候使用SynchronousQueue
+         * queues<0的时候使用无界阻塞队列LinkedBlockingQueue
+         * queues>0的时候使用指定大小的阻塞队列LinkedBlockingQueue
+         * 拒绝策略使用自定义的拒绝报告
+         */
         return new ThreadPoolExecutor(threads, threads, 0, TimeUnit.MILLISECONDS, 
         		queues == 0 ? new SynchronousQueue<Runnable>() : 
         			(queues < 0 ? new LinkedBlockingQueue<Runnable>() 

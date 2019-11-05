@@ -26,6 +26,12 @@ import com.alibaba.dubbo.common.extension.SPI;
  * ThreadPool
  * 
  * @author william.liangf
+ *
+ * 提供了三种线程池实现：
+ * 1. fixed，固定大小线程池，启动时建立，不关闭，一直持有。这是默认的线程池。
+ * 2. cached，缓存线程池，空闲一分钟自动删除，需要时重建。
+ * 3. limited，可伸缩线程池，但是线程池中的线程池数只会增长不会收缩。这样是为了
+ * 避免收缩时突然来了大流量引起性能问题。
  */
 @SPI("fixed")
 public interface ThreadPool {
