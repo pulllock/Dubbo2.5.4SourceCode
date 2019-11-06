@@ -55,7 +55,7 @@ public class ProtocolFilterWrapper implements Protocol {
         }
         /**
          * 非registry类型的，也即是具体类型的protocol，比如dubbo类型
-         * 会先进行构建一个Invoker链的操作，在调用具体的DubboProtocol进行导出服务
+         * 会先进行构建一个Invoker过滤链的操作，在调用具体的DubboProtocol进行导出服务
          *
          * 构建过滤器链的操作，是ExtensionLoader的getActiveExtension获取的，
          * 也就是根据url中配置的参数来进行获取。
@@ -77,6 +77,7 @@ public class ProtocolFilterWrapper implements Protocol {
 
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
+        // 获取可激活的过滤链数组
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
         if (filters.size() > 0) {
             for (int i = filters.size() - 1; i >= 0; i --) {
