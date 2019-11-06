@@ -28,19 +28,28 @@ import com.alibaba.dubbo.rpc.protocol.AbstractExporter;
  */
 class InjvmExporter<T> extends AbstractExporter<T> {
 
+    /**
+     * 服务键
+     */
     private final String key;
-    
+
+    /**
+     * Exporter集合
+     * com.alibaba.dubbo.rpc.protocol.AbstractProtocol#exporterMap
+     */
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap){
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
+        // 添加到 Exporter 集合
         exporterMap.put(key, this);
     }
 
     public void unexport() {
         super.unexport();
+        // 移出Exporter集合
         exporterMap.remove(key);
     }
 

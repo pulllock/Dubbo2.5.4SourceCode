@@ -57,6 +57,8 @@ public class ProtocolListenerWrapper implements Protocol {
         /**
          * 非registry类型的，比如dubbo类型的，需要先调用下面的Wrapper以及实际DubboProtocol进行处理，
          * 然后将结果包装成ListenerExporterWrapper类型返回
+         *
+         * 监听Exporter暴露完成
          */
         return new ListenerExporterWrapper<T>(protocol.export(invoker), 
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)

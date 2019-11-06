@@ -35,9 +35,15 @@ import com.alibaba.dubbo.rpc.support.ProtocolUtils;
  * @author william.liangf
  */
 public class InjvmProtocol extends AbstractProtocol implements Protocol {
-    
+
+    /**
+     * 协议名 injvm
+     */
     public static final String NAME = Constants.LOCAL_PROTOCOL;
 
+    /**
+     * 默认端口
+     */
     public static final int DEFAULT_PORT = 0;
 
     public int getDefaultPort() {
@@ -58,6 +64,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // 创建InjvmExporter对象
         return new InjvmExporter<T>(invoker, invoker.getUrl().getServiceKey(), exporterMap);
     }
 

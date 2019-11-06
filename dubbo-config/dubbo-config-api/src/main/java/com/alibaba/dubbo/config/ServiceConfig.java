@@ -581,9 +581,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
-            // protocol是根据spi自动生成的，里面会根据协议来判断调用哪个具体的实现
-            // 这里会使用InjvmProtocol
-            // 先获取Invoker，然后根据协议将Invoker暴露成Exporter
+            /**
+             * protocol是根据spi自动生成的，里面会根据协议来判断调用哪个具体的实现
+             * 这里会使用InjvmProtocol
+             * 先获取Invoker，然后根据协议将Invoker暴露成Exporter
+             *
+             * Protocol有两个Wrapper拓展实现类，所以export方法调用顺序是：
+             * Protocol$Adaptive -> ProtocolFilterWrapper -> ProtocolListenerWrapper -> InjvmProtocol
+             */
             Exporter<?> exporter = protocol.export(
                     proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
             exporters.add(exporter);
