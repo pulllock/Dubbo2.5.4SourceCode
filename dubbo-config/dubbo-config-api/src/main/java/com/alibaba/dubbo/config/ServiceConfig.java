@@ -536,7 +536,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 if (registryURLs != null && registryURLs.size() > 0
                         && url.getParameter("register", true)) {
                     for (URL registryURL : registryURLs) {
+                        /**
+                         * dynamic 服务是否动态注册，如果设为false，注册后将显示disable，需要人工启用，
+                         * 并且服务提供者停止时，不会自动取消注册，需要人工禁用
+                         */
                         url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
+                        // 获得监控中心url
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
@@ -558,6 +563,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         exporters.add(exporter);
                     }
                 } else {
+                    // 用于被服务消费者直连服务提供者
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
 
                     Exporter<?> exporter = protocol.export(invoker);

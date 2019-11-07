@@ -106,7 +106,7 @@ public class RegistryProtocol implements Protocol {
     
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
-        // 导出服务
+        // 导出服务，本地启动服务，但不包括向注册中心注册服务
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider
         /**
@@ -117,7 +117,7 @@ public class RegistryProtocol implements Protocol {
         // 获取已经注册的服务提供者的URL，就是dubbo://开头的
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
         /**
-         * 向注册中心注册服务，我们这就是写zookeeper结点
+         * 向注册中心注册服务提供者，就是自己，我们这就是写zookeeper结点
          * ZookeeperRegistry继承了FailbackRegistry，
          * FailbackRegistry继承了AbstractRegistry
          */
