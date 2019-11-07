@@ -27,6 +27,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
 	public CuratorZookeeperClient(URL url) {
 		super(url);
 		try {
+			// 创建client对象
 			Builder builder = CuratorFrameworkFactory.builder()
 					.connectString(url.getBackupAddress())
 			        .retryPolicy(new RetryNTimes(Integer.MAX_VALUE, 1000))  
@@ -36,6 +37,8 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
 				builder = builder.authorization("digest", authority.getBytes());
 			}
 			client = builder.build();
+
+			// 添加连接监听器
 			client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
 				public void stateChanged(CuratorFramework client, ConnectionState state) {
 					if (state == ConnectionState.LOST) {
@@ -47,6 +50,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
 					}
 				}
 			});
+			// 启动client
 			client.start();
 		} catch (IOException e) {
 			throw new IllegalStateException(e.getMessage(), e);

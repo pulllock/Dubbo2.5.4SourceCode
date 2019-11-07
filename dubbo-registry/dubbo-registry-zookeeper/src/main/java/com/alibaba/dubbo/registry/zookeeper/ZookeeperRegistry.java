@@ -49,9 +49,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
     private final static String DEFAULT_ROOT = "dubbo";
 
     private final String        root;
-    
+
+    /**
+     * Service接口集合
+     */
     private final Set<String> anyServices = new ConcurrentHashSet<String>();
 
+    /**
+     * 监听器集合
+     */
     private final ConcurrentMap<URL, ConcurrentMap<NotifyListener, ChildListener>> zkListeners = new ConcurrentHashMap<URL, ConcurrentMap<NotifyListener, ChildListener>>();
     
     private final ZookeeperClient zkClient;
@@ -61,6 +67,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (url.isAnyHost()) {
     		throw new IllegalStateException("registry address == null");
     	}
+        // 获取group，默认为dubbo
         String group = url.getParameter(Constants.GROUP_KEY, DEFAULT_ROOT);
         if (! group.startsWith(Constants.PATH_SEPARATOR)) {
             group = Constants.PATH_SEPARATOR + group;
@@ -97,6 +104,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     protected void doRegister(URL url) {
         try {
+            // dynamic是否动态数据，false表示持久数据，注册方退出时，数据依然存在注册中心
         	zkClient.create(toUrlPath(url), url.getParameter(Constants.DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);
@@ -113,8 +121,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            // 处理向所有Service发起的订阅，例如监控中心的订阅
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
+                // 获取监听器集合
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                 if (listeners == null) {
                     zkListeners.putIfAbsent(url, new ConcurrentHashMap<NotifyListener, ChildListener>());
@@ -126,6 +136,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         public void childChanged(String parentPath, List<String> currentChilds) {
                             for (String child : currentChilds) {
 								child = URL.decode(child);
+								// 新增Service时，发起订阅
                                 if (! anyServices.contains(child)) {
                                     anyServices.add(child);
                                     subscribe(url.setPath(child).addParameters(Constants.INTERFACE_KEY, child, 
@@ -136,6 +147,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     });
                     zkListener = listeners.get(listener);
                 }
+                // 创建Service节点，持久节点
                 zkClient.create(root, false);
                 List<String> services = zkClient.addChildListener(root, zkListener);
                 if (services != null && services.size() > 0) {
@@ -147,6 +159,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     }
                 }
             } else {
+                // 处理指定Service层发起的订阅，如服务消费者的订阅
                 List<URL> urls = new ArrayList<URL>();
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);

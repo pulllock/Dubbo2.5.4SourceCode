@@ -38,7 +38,10 @@ public interface RegistryFactory {
      * 4. 支持file=registry.cache本地磁盘文件缓存。<br>
      * 5. 支持timeout=1000请求超时设置。<br>
      * 6. 支持session=60000会话超时或过期设置。<br>
-     * 
+     *
+     * @Adaptive({"protocol"}) spi会自动生成RegistryFactory$Adaptive，
+     * 根据url.protocol获得对应的RegistryFactory实现类
+     *
      * @param url 注册中心地址，不允许为空
      * @return 注册中心引用，总不返回空
      */
