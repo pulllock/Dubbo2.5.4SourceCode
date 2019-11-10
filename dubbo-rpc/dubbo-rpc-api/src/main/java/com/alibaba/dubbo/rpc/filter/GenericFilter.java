@@ -49,6 +49,7 @@ import com.alibaba.dubbo.rpc.support.ProtocolUtils;
 public class GenericFilter implements Filter {
 
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
+        // 泛化引用的调用
         if (inv.getMethodName().equals(Constants.$INVOKE) 
                 && inv.getArguments() != null
                 && inv.getArguments().length == 3
@@ -57,16 +58,22 @@ public class GenericFilter implements Filter {
             String[] types = (String[]) inv.getArguments()[1];
             Object[] args = (Object[]) inv.getArguments()[2];
             try {
+                // 方法对象
                 Method method = ReflectUtils.findMethodByMethodSignature(invoker.getInterface(), name, types);
+                // 方法参数类型
                 Class<?>[] params = method.getParameterTypes();
+                // 参数
                 if (args == null) {
                     args = new Object[params.length];
                 }
                 String generic = inv.getAttachment(Constants.GENERIC_KEY);
+                // 反序列化
                 if (StringUtils.isEmpty(generic)
                     || ProtocolUtils.isDefaultGenericSerialization(generic)) {
+                    // Map转成pojo
                     args = PojoUtils.realize(args, params, method.getGenericParameterTypes());
                 } else if (ProtocolUtils.isJavaGenericSerialization(generic)) {
+                    // byte[]转换成方法参数
                     for(int i = 0; i < args.length; i++) {
                         if (byte[].class == args[i].getClass()) {
                             try {
@@ -88,6 +95,7 @@ public class GenericFilter implements Filter {
                         }
                     }
                 } else if (ProtocolUtils.isBeanGenericSerialization(generic)) {
+                    // JavaBeanDescriptor转换成方法参数
                     for(int i = 0; i < args.length; i++) {
                         if (args[i] instanceof JavaBeanDescriptor) {
                             args[i] = JavaBeanSerializeUtil.deserialize((JavaBeanDescriptor)args[i]);
@@ -103,11 +111,14 @@ public class GenericFilter implements Filter {
                         }
                     }
                 }
+                // 方法调用
                 Result result = invoker.invoke(new RpcInvocation(method, args, inv.getAttachments()));
+                // 异常结果
                 if (result.hasException()
                         && ! (result.getException() instanceof GenericException)) {
                     return new RpcResult(new GenericException(result.getException()));
                 }
+                // 结果序列化
                 if (ProtocolUtils.isJavaGenericSerialization(generic)) {
                     try {
                         UnsafeByteArrayOutputStream os = new UnsafeByteArrayOutputStream(512);

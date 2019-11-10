@@ -52,6 +52,7 @@ public class GenericImplFilter implements Filter {
 
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         String generic = invoker.getUrl().getParameter(Constants.GENERIC_KEY);
+        // 泛化实现的调用
         if (ProtocolUtils.isGeneric(generic)
                 && ! Constants.$INVOKE.equals(invocation.getMethodName())
                 && invocation instanceof RpcInvocation) {
@@ -59,25 +60,32 @@ public class GenericImplFilter implements Filter {
             String methodName = invocation2.getMethodName();
             Class<?>[] parameterTypes = invocation2.getParameterTypes();
             Object[] arguments = invocation2.getArguments();
-            
+
+            // 参数类型
             String[] types = new String[parameterTypes.length];
             for (int i = 0; i < parameterTypes.length; i ++) {
                 types[i] = ReflectUtils.getName(parameterTypes[i]);
             }
 
             Object[] args;
+            // 序列化，参数转换成Bean
             if (ProtocolUtils.isBeanGenericSerialization(generic)) {
                 args = new Object[arguments.length];
                 for(int i = 0; i < arguments.length; i++) {
                     args[i] = JavaBeanSerializeUtil.serialize(arguments[i], JavaBeanAccessor.METHOD);
                 }
             } else {
+                // 序列化，参数map转换成pojo
                 args = PojoUtils.generalize(arguments);
             }
-            
+
+            // 修改调用方法的名字为$invoke
             invocation2.setMethodName(Constants.$INVOKE);
+            // 设置方法参数类型
             invocation2.setParameterTypes(GENERIC_PARAMETER_TYPES);
+            // 设置方法的参数数组
             invocation2.setArguments(new Object[] {methodName, types, args});
+            // 调用
             Result result = invoker.invoke(invocation2);
             
             if (! result.hasException()) {
@@ -146,6 +154,7 @@ public class GenericImplFilter implements Filter {
             return result;
         }
 
+        // 泛化引用的调用
         if (invocation.getMethodName().equals(Constants.$INVOKE)
             && invocation.getArguments() != null
             && invocation.getArguments().length == 3
