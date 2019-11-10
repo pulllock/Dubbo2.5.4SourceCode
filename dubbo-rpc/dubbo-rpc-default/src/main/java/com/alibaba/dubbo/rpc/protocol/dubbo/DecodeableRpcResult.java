@@ -37,6 +37,8 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
 
 /**
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
+ *
+ * 当服务提供者返回给消费者调用结果，前者编码的RpcResult对象，会被后者解码成DecodeableRpcResult对象
  */
 public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable {
 
@@ -75,8 +77,10 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
 
         byte flag = in.readByte();
         switch (flag) {
+            // 无返回值
             case DubboCodec.RESPONSE_NULL_VALUE:
                 break;
+                // 有返回值
             case DubboCodec.RESPONSE_VALUE:
                 try {
                     Type[] returnType = RpcUtils.getReturnTypes(invocation);
@@ -87,6 +91,7 @@ public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable 
                     throw new IOException(StringUtils.toString("Read response data failed.", e));
                 }
                 break;
+                // 异常返回
             case DubboCodec.RESPONSE_WITH_EXCEPTION:
                 try {
                     Object obj = in.readObject();
