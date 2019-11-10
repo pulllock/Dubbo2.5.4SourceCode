@@ -39,6 +39,8 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
  * EventFilter
  * @author chao.liuc
  * @author william.liangf
+ *
+ * 事件通知过滤器
  */
 @Activate(group = Constants.CONSUMER)
 public class FutureFilter implements Filter {
@@ -46,14 +48,18 @@ public class FutureFilter implements Filter {
     protected static final Logger logger = LoggerFactory.getLogger(FutureFilter.class);
 
     public Result invoke(final Invoker<?> invoker, final Invocation invocation) throws RpcException {
+        // 是否异步调用
     	final boolean isAsync = RpcUtils.isAsync(invoker.getUrl(), invocation);
-        
+
+    	// 触发前置方法
     	fireInvokeCallback(invoker, invocation);
-        //需要在调用前配置好是否有返回值，已供invoker判断是否需要返回future.
+        // 需要在调用前配置好是否有返回值，已供invoker判断是否需要返回future.
         Result result = invoker.invoke(invocation);
         if (isAsync) {
+            // 异步回调
             asyncCallback(invoker, invocation);
         } else {
+            // 同步回调
             syncCallback(invoker, invocation, result);
         }
         return result;

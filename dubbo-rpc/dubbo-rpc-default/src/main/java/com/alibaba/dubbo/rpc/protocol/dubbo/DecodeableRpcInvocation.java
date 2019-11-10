@@ -40,6 +40,8 @@ import static com.alibaba.dubbo.rpc.protocol.dubbo.CallbackServiceCodec.decodeIn
 
 /**
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
+ *
+ * 服务消费者调用服务提供者，前者编码的RpcInvocation对象会被后者解码成DecodeableRpcInvocation对象
  */
 public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Decodeable {
 
@@ -89,10 +91,12 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
             .deserialize(channel.getUrl(), input);
 
+        // 解码dubbo、path、version
         setAttachment(Constants.DUBBO_VERSION_KEY, in.readUTF());
         setAttachment(Constants.PATH_KEY, in.readUTF());
         setAttachment(Constants.VERSION_KEY, in.readUTF());
 
+        // 解码方法、方法签名、方法参数
         setMethodName(in.readUTF());
         try {
             Object[] args;
@@ -116,6 +120,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
             }
             setParameterTypes(pts);
 
+            // 解码隐式传参集合
             Map<String, String> map = (Map<String, String>) in.readObject(Map.class);
             if (map != null && map.size() > 0) {
                 Map<String, String> attachment = getAttachments();
@@ -125,6 +130,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
                 attachment.putAll(map);
                 setAttachments(attachment);
             }
+            // 进一步解码方法参数，可能会有方法回调
             //decode argument ,may be callback
             for (int i = 0; i < args.length; i++) {
                 args[i] = decodeInvocationArgument(channel, this, pts, i, args[i]);
