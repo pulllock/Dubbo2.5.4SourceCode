@@ -47,6 +47,8 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.ChannelHandlers;
  * 
  * @author qian.lei
  * @author chao.liuc
+ *
+ * 客户端抽象类
  */
 public abstract class AbstractClient extends AbstractEndpoint implements Client {
     
@@ -57,7 +59,10 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     private static final AtomicInteger CLIENT_THREAD_POOL_ID = new AtomicInteger();
 
     private final Lock            connectLock = new ReentrantLock();
-    
+
+    /**
+     * 重连定时任务执行线程池
+     */
     private static final ScheduledThreadPoolExecutor reconnectExecutorService = new ScheduledThreadPoolExecutor(2, new NamedThreadFactory("DubboClientReconnectTimer", true));
     
     private volatile  ScheduledFuture<?> reconnectExecutorFuture = null;
@@ -89,7 +94,8 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         
         //默认重连间隔2s，1800表示1小时warning一次.
         reconnect_warning_period = url.getParameter("reconnect.waring.period", 1800);
-        
+
+        // 初始化客户端
         try {
             doOpen();
         } catch (Throwable t) {
@@ -98,6 +104,8 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                                         "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() 
                                         + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
+
+        // 连接服务器
         try {
             // connect.
             connect();
@@ -118,7 +126,8 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                     "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() 
                     + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
-        
+
+        // 获得线程池
         executor = (ExecutorService) ExtensionLoader.getExtensionLoader(DataStore.class)
             .getDefaultExtension().get(Constants.CONSUMER_SIDE, Integer.toString(url.getPort()));
         ExtensionLoader.getExtensionLoader(DataStore.class)
@@ -273,10 +282,13 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     protected void connect() throws RemotingException {
         connectLock.lock();
         try {
+            // 已连接
             if (isConnected()) {
                 return;
             }
+            // 初始化重连线程
             initConnectStatusCheckCommand();
+            // 执行连接动作
             doConnect();
             if (! isConnected()) {
                 throw new RemotingException(this, "Failed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " "
@@ -289,6 +301,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                                             + ", channel is " + this.getChannel());
             	}
             }
+            // 重连次数置为0
             reconnect_count.set(0);
             reconnect_error_log_flag.set(false);
         } catch (RemotingException e) {
