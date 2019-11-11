@@ -37,6 +37,8 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
  * 
  * @author qian.lei
  * @author ding.lid
+ *
+ * 服务器抽象类
  */
 public abstract class AbstractServer extends AbstractEndpoint implements Server {
     

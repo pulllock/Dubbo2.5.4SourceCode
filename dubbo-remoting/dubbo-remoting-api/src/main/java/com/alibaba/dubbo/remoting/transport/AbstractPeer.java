@@ -30,6 +30,9 @@ import com.alibaba.dubbo.remoting.RemotingException;
  */
 public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 
+    /**
+     * 通道处理器，执行逻辑处理
+     */
     private final ChannelHandler handler;
 
     private volatile URL         url;
@@ -48,6 +51,11 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
     }
 
     public void send(Object message) throws RemotingException {
+        /**
+         * sent：
+         * true 等待消息发出，消息发送失败将抛出异常
+         * false 不等待消息发出，将消息放入IO队列，立即返回
+         */
         send(message, url.getParameter(Constants.SENT_KEY, false));
     }
 
