@@ -21,6 +21,8 @@ import com.alibaba.dubbo.remoting.Dispatcher;
 
 /**
  * 不派发线程池。
+ *
+ * 全部在IO线程上执行
  * 
  * @author chao.liuc
  */

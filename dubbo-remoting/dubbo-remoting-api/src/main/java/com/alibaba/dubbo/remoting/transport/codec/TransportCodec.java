@@ -30,6 +30,8 @@ import com.alibaba.dubbo.remoting.transport.AbstractCodec;
 
 /**
  * TransportCodec
+ *
+ * 传输编解码器，使用Serialization进行序列化和反序列化，直接编解码
  * 
  * @author william.liangf
  */

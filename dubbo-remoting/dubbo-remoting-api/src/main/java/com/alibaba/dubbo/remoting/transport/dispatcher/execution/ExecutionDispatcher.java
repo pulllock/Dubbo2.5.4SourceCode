@@ -21,6 +21,8 @@ import com.alibaba.dubbo.remoting.Dispatcher;
 
 /**
  * 除发送全部使用线程池处理
+ *
+ * 请求消息派发到线程池，不含响应。响应和其他连接断开事件，心跳等消息直接在IO线程上执行
  * 
  * @author chao.liuc
  */

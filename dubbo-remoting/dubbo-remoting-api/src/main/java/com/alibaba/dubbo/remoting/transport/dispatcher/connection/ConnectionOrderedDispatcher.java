@@ -21,6 +21,8 @@ import com.alibaba.dubbo.remoting.Dispatcher;
 
 /**
  * connect disconnect 保证顺序.
+ *
+ * 在IO线程上，将连接断开事件放入队列，有序逐个执行，其他消息派发到线程池
  * 
  * @author chao.liuc
  */

@@ -40,6 +40,12 @@ public abstract class AbstractCodec implements Codec2 {
         return CodecSupport.getSerialization(channel.getUrl());
     }
 
+	/**
+	 * 校验消息长度
+	 * @param channel
+	 * @param size
+	 * @throws IOException
+	 */
     protected static void checkPayload(Channel channel, long size) throws IOException {
         int payload = Constants.DEFAULT_PAYLOAD;
         if (channel != null && channel.getUrl() != null) {
