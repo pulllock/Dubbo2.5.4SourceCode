@@ -9,6 +9,8 @@ import com.alibaba.dubbo.remoting.exchange.support.MultiMessage;
 /**
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  * @see MultiMessage
+ *
+ * 多消息处理器，处理一次性接收到多条消息的情况
  */
 public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
 
