@@ -42,13 +42,22 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     // 日志输出
     private static final Logger logger = LoggerFactory.getLogger(AbstractDirectory.class);
 
+    /**
+     *  注册中心url
+     */
     private final URL url ;
     
     private volatile boolean destroyed = false;
 
+    /**
+     * 消费者url
+     */
     private volatile URL consumerUrl ;
-    
-	private volatile List<Router> routers;
+
+    /**
+     * 路由列表
+     */
+    private volatile List<Router> routers;
     
     public AbstractDirectory(URL url) {
         this(url, null);
@@ -65,7 +74,13 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         this.consumerUrl = consumerUrl;
         setRouters(routers);
     }
-    
+
+    /**
+     * 获得所有Invoker集合
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     public List<Invoker<T>> list(Invocation invocation) throws RpcException {
         if (destroyed){
             throw new RpcException("Directory already destroyed .url: "+ getUrl());
