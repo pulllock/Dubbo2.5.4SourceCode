@@ -88,10 +88,12 @@ public class DefaultFuture implements ResponseFuture {
         if (timeout <= 0) {
             timeout = Constants.DEFAULT_TIMEOUT;
         }
+        // 未完成，就需要等待
         if (! isDone()) {
             long start = System.currentTimeMillis();
             lock.lock();
             try {
+                // 等待完成，或超时
                 while (! isDone()) {
                     done.await(timeout, TimeUnit.MILLISECONDS);
                     if (isDone() || System.currentTimeMillis() - start > timeout) {
@@ -103,10 +105,12 @@ public class DefaultFuture implements ResponseFuture {
             } finally {
                 lock.unlock();
             }
+            // 未完成，抛出超时异常
             if (! isDone()) {
                 throw new TimeoutException(sent > 0, channel, getTimeoutMessage(false));
             }
         }
+        // 返回响应
         return returnFromResponse();
     }
     
@@ -254,12 +258,14 @@ public class DefaultFuture implements ResponseFuture {
         lock.lock();
         try {
             response = res;
+            // 通知唤醒等待
             if (done != null) {
                 done.signal();
             }
         } finally {
             lock.unlock();
         }
+        // 调用回调方法
         if (callback != null) {
             invokeCallback(callback);
         }
@@ -287,6 +293,7 @@ public class DefaultFuture implements ResponseFuture {
                         if (future == null || future.isDone()) {
                             continue;
                         }
+                        // 超时
                         if (System.currentTimeMillis() - future.getStartTimestamp() > future.getTimeout()) {
                             // create exception response.
                             Response timeoutResponse = new Response(future.getId());

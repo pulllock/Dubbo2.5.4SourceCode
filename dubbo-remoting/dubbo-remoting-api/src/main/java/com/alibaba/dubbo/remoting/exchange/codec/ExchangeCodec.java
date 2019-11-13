@@ -42,12 +42,24 @@ import com.alibaba.dubbo.remoting.transport.CodecSupport;
  * 
  * @author qianlei
  * @author william.liangf
+ *
+ * 信息交换编解码器
  */
 public class ExchangeCodec extends TelnetCodec {
 
     private static final Logger     logger             = LoggerFactory.getLogger(ExchangeCodec.class);
 
-    // header length.
+    // header length.16字节，128位
+    /**
+     * [0, 15]：Magic Number
+     * [16, 20]：Serialization 编号。
+     * [21]：event 是否为事件。
+     * [22]：twoWay 是否需要响应。
+     * [23]：是请求还是响应。
+     * [24 - 31]：status 状态。
+     * [32 - 95]：id 编号，Long 型。
+     * [96 - 127]：Body 的长度。通过该长度，读取 Body 。
+     */
     protected static final int      HEADER_LENGTH      = 16;
 
     // magic header.
@@ -71,11 +83,14 @@ public class ExchangeCodec extends TelnetCodec {
     }
 
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
+        // 请求
         if (msg instanceof Request) {
             encodeRequest(channel, buffer, (Request) msg);
         } else if (msg instanceof Response) {
+            // 响应
             encodeResponse(channel, buffer, (Response) msg);
         } else {
+            // 父类处理，Telnet命令
             super.encode(channel, buffer, msg);
         }
     }
@@ -106,7 +121,7 @@ public class ExchangeCodec extends TelnetCodec {
             }
             return super.decode(channel, buffer, readable, header);
         }
-        // check length.
+        // check length.header长度不够，返回：需要更多输入
         if (readable < HEADER_LENGTH) {
             return DecodeResult.NEED_MORE_INPUT;
         }
@@ -115,6 +130,7 @@ public class ExchangeCodec extends TelnetCodec {
         int len = Bytes.bytes2int(header, 12);
         checkPayload(channel, len);
 
+        // 总长度不够
         int tt = len + HEADER_LENGTH;
         if( readable < tt ) {
             return DecodeResult.NEED_MORE_INPUT;
