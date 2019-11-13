@@ -45,10 +45,19 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(FailbackClusterInvoker.class);
 
+    /**
+     * 重试的频率
+     */
     private static final long RETRY_FAILED_PERIOD = 5 * 1000;
 
+    /**
+     * 重试线程池
+     */
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2, new NamedThreadFactory("failback-cluster-timer", true));
 
+    /**
+     * 重试任务Future
+     */
     private volatile ScheduledFuture<?> retryFuture;
 
     private final ConcurrentMap<Invocation, AbstractClusterInvoker<?>> failed = new ConcurrentHashMap<Invocation, AbstractClusterInvoker<?>>();
@@ -58,6 +67,7 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     private void addFailed(Invocation invocation, AbstractClusterInvoker<?> router) {
+        // 定时任务未初始化，进行创建任务
         if (retryFuture == null) {
             synchronized (this) {
                 if (retryFuture == null) {
@@ -77,6 +87,7 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
                 }
             }
         }
+        // 添加到失败任务中去
         failed.put(invocation, router);
     }
 
@@ -84,12 +95,15 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
         if (failed.size() == 0) {
             return;
         }
+        // 循环重试任务
         for (Map.Entry<Invocation, AbstractClusterInvoker<?>> entry : new HashMap<Invocation, AbstractClusterInvoker<?>>(
                                                                                                                          failed).entrySet()) {
             Invocation invocation = entry.getKey();
             Invoker<?> invoker = entry.getValue();
             try {
+                // 调用
                 invoker.invoke(invocation);
+                // 移除
                 failed.remove(invocation);
             } catch (Throwable e) {
                 logger.error("Failed retry to invoke method " + invocation.getMethodName() + ", waiting again.", e);

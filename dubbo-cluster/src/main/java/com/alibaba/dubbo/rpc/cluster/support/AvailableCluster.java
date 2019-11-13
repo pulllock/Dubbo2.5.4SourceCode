@@ -27,7 +27,7 @@ import com.alibaba.dubbo.rpc.cluster.LoadBalance;
 
 /**
  * AvailableCluster
- * 
+ * 调用首个可用的服务器
  * @author william.liangf
  */
 public class AvailableCluster implements Cluster {

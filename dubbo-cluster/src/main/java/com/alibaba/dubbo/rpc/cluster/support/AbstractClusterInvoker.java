@@ -43,6 +43,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
     private static final Logger                logger                            = LoggerFactory
                                                                                          .getLogger(AbstractClusterInvoker.class);
+    /**
+     * 可以获得所有服务提供者的Invoker对象
+     */
     protected final Directory<T>               directory;
 
     protected final boolean                    availablecheck;
@@ -236,7 +239,13 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         }
         return null;
     }
-    
+
+    /**
+     * 调用服务提供者
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     public Result invoke(final Invocation invocation) throws RpcException {
 
         checkWhetherDestroyed();
@@ -252,8 +261,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         } else {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);
         }
+        // 如果是异步调用，设置调用编号
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
-        // doInvoke子类实现
+        // doInvoke子类实现，执行调用
         return doInvoke(invocation, invokers, loadbalance);
     }
 
@@ -285,7 +295,13 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
     protected abstract Result doInvoke(Invocation invocation, List<Invoker<T>> invokers,
                                        LoadBalance loadbalance) throws RpcException;
-    
+
+    /**
+     * 获得所有服务提供者集合
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     protected  List<Invoker<T>> list(Invocation invocation) throws RpcException {
     	List<Invoker<T>> invokers = directory.list(invocation);
     	return invokers;
