@@ -58,6 +58,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     }
 
     void handlerEvent(Channel channel, Request req) throws RemotingException {
+        // 客户端收到readonly事件，记录到通道，不会再向该服务器发送新的请求
         if (req.getData() != null && req.getData().equals(Request.READONLY_EVENT)) {
             channel.setAttribute(Constants.CHANNEL_ATTRIBUTE_READONLY_KEY, Boolean.TRUE);
         }
@@ -160,12 +161,15 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         try {
+            // 请求
             if (message instanceof Request) {
                 // handle request.
                 Request request = (Request) message;
+                // 事件请求
                 if (request.isEvent()) {
                     handlerEvent(channel, request);
                 } else {
+                    // 普通请求
                     if (request.isTwoWay()) {
                         Response response = handleRequest(exchangeChannel, request);
                         channel.send(response);
@@ -174,12 +178,15 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     }
                 }
             } else if (message instanceof Response) {
+                // 响应
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) {
+                // 客户端不支持String类型消息
                 if (isClientSide(channel)) {
                     Exception e = new Exception("Dubbo client can not supported string message: " + message + " in channel: " + channel + ", url: " + channel.getUrl());
                     logger.error(e.getMessage(), e);
                 } else {
+                    // 服务端，telnet命令
                     String echo = handler.telnet(channel, (String) message);
                     if (echo != null && echo.length() > 0) {
                         channel.send(echo);
