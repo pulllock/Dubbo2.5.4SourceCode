@@ -19,7 +19,7 @@ import java.io.IOException;
 
 /**
  * Object output.
- * 
+ * 增加写入对象数据
  * @author qian.lei
  */
 public interface ObjectOutput extends DataOutput {

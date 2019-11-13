@@ -19,7 +19,7 @@ import java.io.IOException;
 
 /**
  * Data output.
- * 
+ * 数据输出接口，向OutputStream中写入基本数据类型
  * @author qian.lei
  */
 public interface DataOutput {
