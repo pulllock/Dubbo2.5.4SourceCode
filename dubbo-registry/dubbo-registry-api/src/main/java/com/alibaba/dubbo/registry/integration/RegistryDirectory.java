@@ -57,6 +57,7 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
  * 
  * @author william.liangf
  * @author chao.liuc
+ * 基于注册中心的Directory
  * 动态服务目录，实现了NotifyListener接口，注册中心服务发生变化后，
  * 当前动态服务目录会收到通知，并刷新Invoker列表。
  */
@@ -74,20 +75,41 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private Registry registry; // 注入时初始化，断言不为null
 
+    /**
+     * 注册中心服务类
+     */
     private final String serviceKey; // 构造时初始化，断言不为null
 
+    /**
+     * 服务类型
+     */
     private final Class<T> serviceType; // 构造时初始化，断言不为null
-    
+
+    /**
+     * 消费者URL配置项
+     */
     private final Map<String, String> queryMap; // 构造时初始化，断言不为null
 
+    /**
+     * 原始目录URL
+     */
     private final URL directoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
-    
+
+    /**
+     * 服务方法
+     */
     private final String[] serviceMethods;
 
+    /**
+     * 是否引用多组
+     */
     private final boolean multiGroup;
 
     private volatile boolean forbidden = false;
-    
+
+    /**
+     * 覆写的目录URL
+     */
     private volatile URL overrideDirectoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
 
     /*override规则 
@@ -104,6 +126,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private volatile Map<String, List<Invoker<T>>> methodInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
     
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
+    /**
+     * 服务提供者Invoker集合
+     */
     private volatile Set<URL> cachedInvokerUrls; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
     public RegistryDirectory(Class<T> serviceType, URL url) {
