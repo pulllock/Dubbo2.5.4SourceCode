@@ -34,20 +34,21 @@ public interface Serialization {
 
     /**
      * get content type id
-     * 
+     * 获取内容类型id
      * @return content type id
      */
     byte getContentTypeId();
 
     /**
      * get content type
-     * 
+     * 获取内容类型
      * @return content type
      */
     String getContentType();
 
     /**
      * create serializer
+     * 创建ObjectOutput对象，序列化输出到OutputStream
      * @param url 
      * @param output
      * @return serializer
@@ -58,6 +59,7 @@ public interface Serialization {
 
     /**
      * create deserializer
+     * 创建ObjectInput对象，从InputStream反序列化
      * @param url 
      * @param input
      * @return deserializer

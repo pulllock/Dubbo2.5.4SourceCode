@@ -20,7 +20,7 @@ import java.lang.reflect.Type;
 
 /**
  * Object input.
- * 
+ * 对象输入接口，增加读取对象的数据
  * @author qian.lei
  */
 public interface ObjectInput extends DataInput {
