@@ -156,7 +156,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
     
     public void subscribe(URL url) {
+        // 设置消费者url
         setConsumerUrl(url);
+        // 发起订阅
         registry.subscribe(url, this);
     }
 
@@ -180,6 +182,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     * 注册中心数据变化时，通知对应的NotifyListener
+     * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
+     */
     public synchronized void notify(List<URL> urls) {
         // 服务提供者URL
         List<URL> invokerUrls = new ArrayList<URL>();
@@ -204,12 +210,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
             }
         }
-        // configurators
+        // configurators 配置规则url
         if (configuratorUrls != null && configuratorUrls.size() >0 ){
             // 将url转成Configurator
             this.configurators = toConfigurators(configuratorUrls);
         }
-        // routers
+        // routers 路由规则url
         if (routerUrls != null && routerUrls.size() >0 ){
             // 转换成Router
             List<Router> routers = toRouters(routerUrls);
@@ -262,7 +268,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls) ;// 将URL列表转成Invoker列表
             Map<String, List<Invoker<T>>> newMethodInvokerMap = toMethodInvokers(newUrlInvokerMap); // 换方法名映射Invoker列表
             // state change
-            //如果计算错误，则不进行处理.
+            // 如果计算错误，则不进行处理.
             if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0 ){
                 logger.error(new IllegalStateException("urls to invokers error .invokerUrls.size :"+invokerUrls.size() + ", invoker.size :0. urls :"+invokerUrls.toString()));
                 return ;
@@ -464,7 +470,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private URL mergeUrl(URL providerUrl){
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // 合并消费端参数
-        
+
+        // 合并配置规则
         List<Configurator> localConfigurators = this.configurators; // local reference
         if (localConfigurators != null && localConfigurators.size() > 0) {
             for (Configurator configurator : localConfigurators) {
@@ -474,7 +481,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         
         providerUrl = providerUrl.addParameter(Constants.CHECK_KEY, String.valueOf(false)); // 不检查连接是否成功，总是创建Invoker！
         
-        //directoryUrl 与 override 合并是在notify的最后，这里不能够处理
+        // directoryUrl 与 override 合并是在notify的最后，这里不能够处理
         this.overrideDirectoryUrl = this.overrideDirectoryUrl.addParametersIfAbsent(providerUrl.getParameters()); // 合并提供者参数        
         
         if ((providerUrl.getPath() == null || providerUrl.getPath().length() == 0)
@@ -623,8 +630,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     * 获得对应的Invoker集合
+     * @param invocation
+     * @return
+     */
     public List<Invoker<T>> doList(Invocation invocation) {
-        // 服务提供这关闭或者禁用
+        // 服务提供者关闭或者禁用
         if (forbidden) {
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "Forbid consumer " +  NetUtils.getLocalHost() + " access service " + getInterface().getName() + " from registry " + getUrl().getAddress() + " use dubbo version " + Version.getVersion() + ", Please check registry access list (whitelist/blacklist).");
         }
@@ -632,7 +644,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         // Invoker本地缓存
         Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
+            // 获得方法名
             String methodName = RpcUtils.getMethodName(invocation);
+            // 获得参数
             Object[] args = RpcUtils.getArguments(invocation);
             if(args != null && args.length > 0 && args[0] != null
                     && (args[0] instanceof String || args[0].getClass().isEnum())) {
@@ -669,6 +683,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (isDestroyed()) {
             return false;
         }
+        // 任一Invoker可用，返回可用
         Map<String, Invoker<T>> localUrlInvokerMap = urlInvokerMap;
         if (localUrlInvokerMap != null && localUrlInvokerMap.size() > 0) {
             for (Invoker<T> invoker : new ArrayList<Invoker<T>>(localUrlInvokerMap.values())) {

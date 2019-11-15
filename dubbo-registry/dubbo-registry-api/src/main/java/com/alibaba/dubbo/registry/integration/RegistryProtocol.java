@@ -314,6 +314,7 @@ public class RegistryProtocol implements Protocol {
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
         // 订阅providers、configurators、routers等结点
+        // 发起服务提供者、路由规则、配置规则的数据订阅
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 
                 + "," + Constants.CONFIGURATORS_CATEGORY 
