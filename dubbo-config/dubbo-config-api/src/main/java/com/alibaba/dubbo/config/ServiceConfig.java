@@ -210,6 +210,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
+
+        // 是否是泛化服务
         if (ref instanceof GenericService) {
             interfaceClass = GenericService.class;
             if (StringUtils.isEmpty(generic)) {
@@ -217,6 +219,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 generic = Boolean.TRUE.toString();
             }
         } else {
+            // 非泛化类型
             try {
                 // 装载类
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
@@ -415,7 +418,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         appendParameters(map, provider, Constants.DEFAULT_KEY);
         appendParameters(map, protocolConfig);
         appendParameters(map, this);
-        // 如果有method标签，获取method的全部属性
+        // 如果有method标签，获取method的全部属性，method就是MethodConfig
         if (methods != null && methods.size() > 0) {
             for (MethodConfig method : methods) {
                 appendParameters(map, method, method.getName());
@@ -472,7 +475,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 }
             } // end of methods for
         }
-        // 通用服务方法
+        // 泛化调用
         if (ProtocolUtils.isGeneric(generic)) {
             map.put("generic", generic);
             map.put("methods", Constants.ANY_VALUE);
