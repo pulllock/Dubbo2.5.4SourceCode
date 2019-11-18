@@ -18,6 +18,7 @@ package com.alibaba.dubbo.rpc.cluster;
 import com.alibaba.dubbo.common.extension.SPI;
 
 /**
+ * 将多个对象合并成一个对象
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  */
 @SPI
