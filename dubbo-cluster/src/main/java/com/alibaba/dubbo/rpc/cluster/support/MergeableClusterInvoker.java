@@ -63,8 +63,10 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
 
     @SuppressWarnings("rawtypes")
 	public Result invoke(final Invocation invocation) throws RpcException {
+        // Invoker集合
         List<Invoker<T>> invokers = directory.list(invocation);
-        
+
+        // Merger拓展名
         String merger = getUrl().getMethodParameter( invocation.getMethodName(), Constants.MERGER_KEY );
         if ( ConfigUtils.isEmpty(merger) ) { // 如果方法不需要Merge，退化为只调一个Group
             for(final Invoker<T> invoker : invokers ) {
@@ -74,7 +76,8 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
             }
             return invokers.iterator().next().invoke(invocation);
         }
-        
+
+        // 获得返回类型
         Class<?> returnType;
         try {
             returnType = getInterface().getMethod(
@@ -82,7 +85,8 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
         } catch ( NoSuchMethodException e ) {
             returnType = null;
         }
-        
+
+        // 并发执行， 发起RPC调用
         Map<String, Future<Result>> results = new HashMap<String, Future<Result>>();
         for( final Invoker<T> invoker : invokers ) {
             Future<Result> future = executor.submit( new Callable<Result>() {
