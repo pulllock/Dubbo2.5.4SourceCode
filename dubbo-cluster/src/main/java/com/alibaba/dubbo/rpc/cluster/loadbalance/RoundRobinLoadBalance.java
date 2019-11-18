@@ -31,11 +31,17 @@ import com.alibaba.dubbo.rpc.Invoker;
  *
  * @author qian.lei
  * @author william.liangf
+ * 轮询，按公约后的权重设置轮询比率
+ *
+ * 存在慢的提供者请求积压的问题
  */
 public class RoundRobinLoadBalance extends AbstractLoadBalance {
 
 	public static final String NAME = "roundrobin";
 
+	/**
+	 * 服务方法和计数器的映射
+	 */
 	private final ConcurrentMap<String, AtomicPositiveInteger> sequences = new ConcurrentHashMap<String, AtomicPositiveInteger>();
 
 	private static final class IntegerWrapper {

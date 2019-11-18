@@ -33,6 +33,8 @@ import com.alibaba.dubbo.rpc.Invoker;
  * ConsistentHashLoadBalance
  * 
  * @author william.liangf
+ *
+ * 基于一致性哈希，相同参数的请求总是发到同一提供者
  */
 public class ConsistentHashLoadBalance extends AbstractLoadBalance {
 
@@ -42,6 +44,7 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
     @Override
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
         String key = invokers.get(0).getUrl().getServiceKey() + "." + invocation.getMethodName();
+        // 基于invoker集合，根据对象内存地址来计算定义哈希值
         int identityHashCode = System.identityHashCode(invokers);
         ConsistentHashSelector<T> selector = (ConsistentHashSelector<T>) selectors.get(key);
         if (selector == null || selector.getIdentityHashCode() != identityHashCode) {
@@ -51,14 +54,30 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
         return selector.select(invocation);
     }
 
+    /**
+     * 基于ketama算法
+     * @param <T>
+     */
     private static final class ConsistentHashSelector<T> {
 
+        /**
+         * 虚拟结点与Invoker的映射关系
+         */
         private final TreeMap<Long, Invoker<T>> virtualInvokers;
 
+        /**
+         * 每个Invoker对应的虚拟结点数
+         */
         private final int                       replicaNumber;
-        
+
+        /**
+         * 哈希值
+         */
         private final int                       identityHashCode;
-        
+
+        /**
+         * 取值参数位置数组
+         */
         private final int[]                     argumentIndex;
 
         public ConsistentHashSelector(List<Invoker<T>> invokers, String methodName, int identityHashCode) {
