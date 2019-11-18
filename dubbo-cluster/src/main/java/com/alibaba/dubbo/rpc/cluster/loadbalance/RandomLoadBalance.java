@@ -27,6 +27,8 @@ import com.alibaba.dubbo.rpc.Invoker;
  *
  * @author qianlei
  * @author william.liangf
+ *
+ * 随机，按权重设置随机概率
  */
 public class RandomLoadBalance extends AbstractLoadBalance {
 

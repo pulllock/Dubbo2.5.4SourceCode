@@ -28,6 +28,9 @@ import com.alibaba.dubbo.rpc.RpcStatus;
  * LeastActiveLoadBalance
  * 
  * @author william.liangf
+ *
+ * 基于最小活跃调用数，是RandomLoadBalance的加强版
+ * 使慢的提供者收到更少的请求
  */
 public class LeastActiveLoadBalance extends AbstractLoadBalance {
 
