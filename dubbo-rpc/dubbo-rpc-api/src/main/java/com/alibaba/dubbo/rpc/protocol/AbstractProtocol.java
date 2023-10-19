@@ -44,7 +44,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Exporter集合，map中有该协议下所有暴露中的Exporter对象
      *
-     * key类似：me.cxis.dubbo.service.HelloService:20080
+     * key类似：fun.pullock.dubbo.service.HelloService:20080
      */
 	protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 

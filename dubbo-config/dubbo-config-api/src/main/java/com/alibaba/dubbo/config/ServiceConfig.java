@@ -319,7 +319,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
          * 加载注册中心URL
          * 组装成类似这种：registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?
          * application=dubbo-provider&application.version=1.0&dubbo=2.5.3&environment=product&organization=china&
-         * owner=cheng.xi&pid=11806&registry=zookeeper&timestamp=1488808916423
+         * owner=Pullock&pid=11806&registry=zookeeper&timestamp=1488808916423
          *
          * 这里是一个List，也就是dubbo允许我们使用多协议和多注册中心来导出服务
          */
@@ -513,7 +513,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         // 创建服务所在的url
         // dubbo://192.168.110.197:20880/dubbo.common.hello.service.HelloService?anyhost=true&application=dubbo-provider&application.version=1.0&dubbo=2.5.3
-        // &environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=cheng.xi&pid=28191
+        // &environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=Pullock&pid=28191
         // &side=provider&timestamp=1489027396094
         URL url = new URL(name, host, port, (contextPath == null || contextPath.length() == 0 ? "" : contextPath + "/") + path, map);
 
@@ -584,7 +584,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
             // 转换成local
             // injvm://127.0.0.1/dubbo.common.hello.service.HelloService?anyhost=true&application=dubbo-provider&application.version=1.0&dubbo=2.5.3
-            // &environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=cheng.xi
+            // &environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=Pullock
             // &pid=28191&side=provider&timestamp=1489027396094
             URL local = URL.valueOf(url.toFullString())
                     .setProtocol(Constants.LOCAL_PROTOCOL)

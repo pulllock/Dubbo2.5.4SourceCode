@@ -257,7 +257,7 @@ public class DubboProtocol extends AbstractProtocol {
         // export service.
         /**
          * 根据url中的参数得到服务的key，
-         * key类似：me.cxis.dubbo.service.HelloService:20080
+         * key类似：fun.pullock.dubbo.service.HelloService:20080
          * 然后根据new一个DubboExproter实例
          * 放到exporterMap中
          */
@@ -341,7 +341,7 @@ public class DubboProtocol extends AbstractProtocol {
          * 创建DubboInvoker实例
          * 先调用getClients方法服务连接
          *
-         * serviceType是接口，比如me.cxis.dubbo.service.HelloService
+         * serviceType是接口，比如fun.pullock.dubbo.service.HelloService
          * url就是dubbo://的url
          * invokers就是Invoker的一个Set
          */

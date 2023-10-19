@@ -40,7 +40,7 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
      * @param proxy 接口实现类
      * @param type 接口类型
      * @param url dubbo://192.168.110.197:20880/dubbo.common.hello.service.HelloService?anyhost=true&application=dubbo-provider
-     *            &application.version=1.0&dubbo=2.5.3&environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=cheng.xi
+     *            &application.version=1.0&dubbo=2.5.3&environment=product&interface=dubbo.common.hello.service.HelloService&methods=sayHello&organization=china&owner=Pullock
      *            &pid=28191&side=provider&timestamp=1489027396094
      * @param <T> 返回一个封装了接口实现类的Invoker
      * @return

@@ -214,7 +214,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     /**
                      * 解析生成url
                      * zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&
-                     * dubbo=2.5.3&environment=product&organization=china&owner=cheng.xi&pid=17268&timestamp=1488986530185
+                     * dubbo=2.5.3&environment=product&organization=china&owner=Pullock&pid=17268&timestamp=1488986530185
                      * addres可能配置了多个，所有要解析成一个URL列表
                      */
                     List<URL> urls = UrlUtils.parseURLs(address, map);
@@ -232,7 +232,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
         /**
          * 返回的url为registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-provider&application.version=1.0&dubbo=2.5.3&
-         * environment=product&organization=china&owner=cheng.xi&pid=17268&registry=zookeeper&timestamp=1488986530185
+         * environment=product&organization=china&owner=Pullock&pid=17268&registry=zookeeper&timestamp=1488986530185
          */
         return registryList;
     }
